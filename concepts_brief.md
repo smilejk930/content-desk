@@ -1,6 +1,5 @@
 # Content Desk: 확장형 비YMYL 카테고리 및 일상 브이로그 네이버 블로그 자동화 시스템
 
-* **작성자:** smilejk930
 * **작성일:** 2026-11-18
 * **관련 문서:** 구현 세부(스키마, API, 인증, 화면 구성 등)는 [설계 메모](docs/designs/content_desk_design_notes.md)에 정리했습니다.
 

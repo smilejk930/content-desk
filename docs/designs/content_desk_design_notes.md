@@ -69,7 +69,7 @@
 
 ### 5.2 PC 브리지 상태 및 통신 (마일스톤 2)
 
-* **브리지 상태별 안내:** 아래는 브리지 자체의 상태이며, 개별 작업 상태(`AUTH_REQUIRED` 등)는 [`design_draft.md`](../../design_draft.md) Technical Plan §5에서 따로 정의합니다.
+* **브리지 상태별 안내:** 아래는 브리지 자체의 상태이며, 개별 작업 상태(`AUTH_REQUIRED` 등)는 [`design_draft.md`](../../design_draft.md) 기술 설계 §5에서 따로 정의합니다.
   * `BRIDGE_OFFLINE`(`last_seen`이 기준 시간, 예: 10분 넘게 갱신되지 않음): **"PC 브리지가 실행 중이 아닙니다."** 탭에서는 수동 복사 흐름을 방해하지 않도록 짧은 상태 표시로만 보여 줍니다.
   * `EGO_NOT_INSTALLED`(브리지가 `ego-browser` 명령을 찾지 못했다고 보고): **"PC에 `ego-browser`(ego lite)가 설치되어 있지 않아 스마트에디터 ONE 제어가 불가능합니다."** 알림과 함께 **설치 URL(`https://lite.ego.app/`) 및 첫 실행 온보딩 안내**.
   * `NAVER_LOGIN_REQUIRED`(마지막 작업의 canary에서 ego lite의 네이버 미로그인이 확인됨): **"PC의 ego lite에서 네이버에 로그인해 주세요."** 알림을 확인 시각과 함께 표시합니다. 로그인 상태를 하트비트로 계속 확인하려면 ego lite에 페이지를 열어야 해 사용자 화면에 보이고 비용이 크므로 상시 확인하지 않습니다. 이 상태에서도 작업 등록은 허용하며, 여전히 미로그인이면 작업이 시작 단계에서 `AUTH_REQUIRED`로 멈춥니다.
@@ -88,7 +88,7 @@
   * `naver_board_name`: 스마트에디터 ONE에서 매핑할 네이버 블로그 게시판명
   * `datalab_anchor_keyword`: 데이터랩 배치 간 `0-100` 상대 비율 정규화를 위한 카테고리별 고정 기준 키워드 (`discovery_mode`가 `trend_first`·`experience_first`이면 미입력 시 카테고리 생성·실행 불가, `none`이면 생략)
   * `seed_keywords`: 초기 발굴·연관 검색용 시드 키워드 목록
-  * `default_media_policy`: 카테고리별 기본 미디어·근거 정책 (예: `여행`·`맛집`은 실제 사진·메모 최소 1건 필수, `테크/IT`는 실사용 후기와 출처 기반 개념 해설 모두 지원). 카테고리가 허용하는 `content_type` 목록(`experience_review` | `explainer` | `vlog`, 허용 조합은 [`design_draft.md`](../../design_draft.md) Technical Plan §2 조합표)을 함께 정의합니다.
+  * `default_media_policy`: 카테고리별 기본 미디어·근거 정책 (예: `여행`·`맛집`은 실제 사진·메모 최소 1건 필수, `테크/IT`는 실사용 후기와 출처 기반 개념 해설 모두 지원). 카테고리가 허용하는 `content_type` 목록(`experience_review` | `explainer` | `vlog`, 허용 조합은 [`design_draft.md`](../../design_draft.md) 기술 설계 §2 조합표)을 함께 정의합니다.
   * `discovery_mode`: `trend_first`(트렌드·검색 수요에서 글감 발굴, 예: `테크/IT` 해설), `experience_first`(작성자의 실제 경험을 먼저 등록한 뒤 키워드 최적화, 예: `여행`, `맛집`), `none`(키워드 발굴 없음, 예: `일상/브이로그`)
   * `default_visibility`: 기본 공개 범위(`전체공개` 또는 `이웃공개`)
 * **YMYL 차단 (2단계 판정):** 카테고리 생성과 키워드 발굴 요청 시 **주식·금융·투자·암호화폐·의료·건강·법률** 관련 카테고리명 및 시드 키워드를 거부합니다.
@@ -112,7 +112,7 @@
 
 * 모든 글감과 원고는 `content_type`(`experience_review` | `explainer` | `vlog`)을 가지며, 글감 선택 시 카테고리가 허용하는 값 중에서 지정합니다. 정책은 카테고리명이 아니라 `content_type` 기준으로 적용합니다.
 * **`experience_review`(`여행`, `맛집`, `테크/IT` 후기):** 실제 사진(위치 정보 제거, 촬영 일시는 별도 메타데이터로 보관) 또는 직접 작성한 실사용 메모를 최소 1건 필수로 요구하며, AI 생성 이미지가 음식·장소·제품 실물 사진을 대체하는 것을 금지합니다.
-* **`explainer`(`테크/IT` 개념·트렌드 해설):** 사용자 메모 없이도 작성을 허용하되, 모든 수치·제품 스펙·가격·날짜·사실 주장은 수집된 1차 출처 URL 및 스니펫에 근거해야 합니다. 원고 작성 전에 1차 출처 본문을 미리 저장해 근거를 연결합니다. LLM은 주장마다 `source_id`와 원문 인용구를 함께 내고, Workers가 인용구가 스냅샷 본문에 실제로 있는지 문자열로 대조해 실패하면 자동으로 `[VERIFY]` 처리합니다(경험 글·브이로그는 메모를 출처로 같은 방식 적용). 1차 출처의 인정 범위는 [`design_draft.md`](../../design_draft.md) Open Question 7에서 확정합니다. AI 생성 이미지는 편당 최대 1~2장의 개념 설명/도식 이미지로만 허용하며 AI 활용 표시를 필수로 포함합니다.
+* **`explainer`(`테크/IT` 개념·트렌드 해설):** 사용자 메모 없이도 작성을 허용하되, 모든 수치·제품 스펙·가격·날짜·사실 주장은 수집된 1차 출처 URL 및 스니펫에 근거해야 합니다. 원고 작성 전에 1차 출처 본문을 미리 저장해 근거를 연결합니다. LLM은 주장마다 `source_id`와 원문 인용구를 함께 내고, Workers가 인용구가 스냅샷 본문에 실제로 있는지 문자열로 대조해 실패하면 자동으로 `[VERIFY]` 처리합니다(경험 글·브이로그는 메모를 출처로 같은 방식 적용). 1차 출처의 인정 범위는 [`design_draft.md`](../../design_draft.md) 미결 질문 7에서 확정합니다. AI 생성 이미지는 편당 최대 1~2장의 개념 설명/도식 이미지로만 허용하며 AI 활용 표시를 필수로 포함합니다.
 * **`vlog`(`일상/브이로그`):** 작성자 실사·메모(최소 1건 필수)만 사용하며 AI 생성 이미지를 금지합니다. 메모에 없는 장소·일시·경험을 AI가 임의로 덧붙이지 않도록 제약합니다.
 * **검증 게이트:** 모든 원고는 네이버에 입력하기 전(수동 복사·PC 자동 임시저장 모두) 미검증 주장 `[VERIFY]` 표시, 출처 URL 목록, 과거 발행 글 및 SERP 대비 N-gram 유사도 경고를 확인하고 작성자의 명시적 승인을 받아야 합니다.
   * 승인은 원고 `content_hash`에 묶어 기록하며, 승인 후 원고를 수정하면 승인이 자동으로 풀립니다.
@@ -128,7 +128,7 @@
 * 네이버 공식 블로그 글쓰기 API는 2020년 5월 종료되었으므로 `#mainFrame` iframe 안의 스마트에디터 ONE을 브라우저에서 조작합니다. 본문은 `.se-component` DOM을 직접 조작하지 않고, 수동 복사 모드의 `[서식 유지 본문 복사]`와 같은 HTML을 `keyboard.paste({ text, html })`로 붙여넣습니다(Windows 지원, 붙여넣은 뒤 사용자 클립보드 복원). 본문을 이미지 마커 기준 구간으로 나눠 "구간 붙여넣기 → 그 위치에 이미지 업로드"를 반복하므로, 수동 복사와 자동 임시저장이 같은 HTML 생성 로직을 공유하고 에디터 내부 상태와 어긋날 위험도 줄어듭니다.
 * 기존 임시저장 복구 모달(`작성 중인 글이 있습니다`) 감지, `CategoryProfile.naver_board_name`(또는 `일상/브이로그`) 게시판 선택, R2 서명 URL로 내려받은 로컬 이미지를 `page.setInputFiles()`(클릭으로 파일 선택창이 열리는 경우 `page.waitForFileChooser()` 후 `chooser.setFiles()`)로 업로드 후 `phinf.pstatic.net` 노드 마운트 대기, 사전 셀렉터 점검(canary)·네이버 로그인 확인 실패 시 중단 로직을 포함합니다.
 * `ego-browser` 작업 공간은 ego lite 프로필의 쿠키 저장소를 사용자 탭과 공유하므로, 프로필 전체에 영향을 주는 쿠키/캐시 삭제 명령은 금지합니다.
-* 세션 만료, 2단계 인증, CAPTCHA 발생 시 즉시 `task.handOff()`로 제어를 넘기고 스크립트를 종료하며, 작업을 `AUTH_REQUIRED` / `CAPTCHA_DETECTED`로 보고하면서 작업 공간 ID(`ego_task_space_id`)를 저장합니다. 사용자가 PC의 ego lite에서 직접 로그인·인증을 완료하고 대시보드에서 `[재개]`를 누르면 작업이 `RESUME_REQUESTED`가 되고, 폴러가 이를 가져가 `takeOverTaskSpace(ego_task_space_id)`(`task`의 메서드가 아닌 최상위 함수)로 같은 작업 공간을 이어받아 재개합니다. 탭에서 보낸 작업이 이 상태로 멈추면 탭 대시보드에 "PC에서 인증이 필요합니다"와 `[재개]`·`[수동 복사로 전환]`을 표시하고, 대기 시간(예: 24시간)이 지나면 `FAILED`로 닫습니다. 전체 작업 상태 전이는 [`design_draft.md`](../../design_draft.md) Technical Plan §5를 따릅니다.
+* 세션 만료, 2단계 인증, CAPTCHA 발생 시 즉시 `task.handOff()`로 제어를 넘기고 스크립트를 종료하며, 작업을 `AUTH_REQUIRED` / `CAPTCHA_DETECTED`로 보고하면서 작업 공간 ID(`ego_task_space_id`)를 저장합니다. 사용자가 PC의 ego lite에서 직접 로그인·인증을 완료하고 대시보드에서 `[재개]`를 누르면 작업이 `RESUME_REQUESTED`가 되고, 폴러가 이를 가져가 `takeOverTaskSpace(ego_task_space_id)`(`task`의 메서드가 아닌 최상위 함수)로 같은 작업 공간을 이어받아 재개합니다. 탭에서 보낸 작업이 이 상태로 멈추면 탭 대시보드에 "PC에서 인증이 필요합니다"와 `[재개]`·`[수동 복사로 전환]`을 표시하고, 대기 시간(예: 24시간)이 지나면 `FAILED`로 닫습니다. 전체 작업 상태 전이는 [`design_draft.md`](../../design_draft.md) 기술 설계 §5를 따릅니다.
 * 자동화는 항상 `임시저장` 완료 및 저장 URL/스크린샷 기록(`PublishReceipt`)에서 종료되며, 최종 발행(및 필요 시 공개 범위 확인)은 사용자가 직접 클릭합니다.
 
 ## 10. 원장 및 지표

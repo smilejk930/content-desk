@@ -20,8 +20,8 @@ crons = ["0 * * * *"]
 # 오너 최초 1회 로그인 후 확보한 UID는 대시보드가 아니라 반드시 이 파일의 ALLOWED_UIDS에 넣어 재배포하세요.
 [vars]
 FIREBASE_PROJECT_ID = "content-desk-b9c3d"
-ALLOWED_UIDS = ""
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+ALLOWED_UIDS = "66bOx7EUvXQupsz9tnFSfFvSlJI2"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://content-desk-f4s.pages.dev"
 R2_ACCOUNT_ID = ""
 R2_BUCKET_NAME = "content-desk-bucket"
 SESSION_MAX_AGE_SECONDS = "1209600"

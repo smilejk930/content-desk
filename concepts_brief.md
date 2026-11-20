@@ -39,7 +39,7 @@ Content Desk는 혼자 운영하는 네이버 블로그에서 **협찬 유치용
 
 | 결정 | 이유 |
 | :--- | :--- |
-| **0원 운영, 클라우드 우선** (Cloudflare Workers·Pages + Firebase Spark + Cloudflare R2) | 인프라 비용 없이 휴대폰·탭·PC 어디서나 접근. 로컬 상시 서버(Docker)와 유료 전환이 필요한 Firebase Cloud Functions는 제외 |
+| **0원 운영, 클라우드 우선** (Cloudflare Workers·Pages + Firebase Auth(Spark) + Cloudflare D1 + Cloudflare R2) | 인프라 비용 없이 휴대폰·탭·PC 어디서나 접근. 로컬 상시 서버(Docker)와 유료 전환이 필요한 Firebase Cloud Functions는 제외 |
 | **비밀키와 외부 API 호출은 서버에서만, 본인 전용 인증** | 네이버·구글 API는 브라우저에서 직접 호출할 수 없고, 공개 URL에서 무료 할당량을 남에게 뺏기지 않기 위해 |
 | **발행은 수동 복사가 기본 경로** (탭·PC 공통) | 네이버 공식 글쓰기 API가 없고, 주 기기인 갤럭시 탭에서는 브라우저 자동화를 할 수 없음 |
 | **PC에서는 임시저장까지 자동화** (`ego-browser`) | PC로 쓸 때 붙여넣기 수고를 줄임. 탭에서 승인한 원고도 PC가 켜져 있으면 PC로 보낼 수 있음 |

@@ -57,7 +57,7 @@ Content Desk는 Cloudflare Pages·Workers 무료 플랜을 코어 백엔드로 �
 *   **질문 3 (휴대폰 HEIC/HEIF 다중 업로드 및 변환 호환성):** 아이폰 사파리의 다중 선택 업로드 및 HEIC 자동 JPEG 변환 동작(변환 후에도 촬영 일시 메타데이터가 남는지 포함)과, 안드로이드 크롬에서 HEIF 사진을 브라우저 내 WebP로 변환할 때 디코딩 실패가 발생하는 조건, 아이폰 사파리의 캔버스 WebP 인코딩 지원 여부(미지원 시 PNG로 저장되어 JPEG 대체 인코딩이 필요)를 실기기로 확인해야 합니다.
 *   **질문 4 (PC 임시저장 글의 갤럭시 탭 이어쓰기 호환성):** 마일스톤 2에서 PC `ego-browser`가 저장한 스마트에디터 ONE 임시저장 글을 갤럭시 탭의 네이버 블로그 앱이나 크롬 에디터에서 열어 이어 쓰고 발행할 때 서식·이미지 깨짐이 없는지 확인이 필요합니다.
 *   **질문 5 (네이버 이용약관의 임시저장 자동화 허용 여부):** 스마트에디터 ONE 임시저장 단계까지만 `ego-browser`로 자동화하는 동작이 네이버 이용약관 및 운영정책의 자동화 프로그램 제한 조항에 저촉되는지 마일스톤 2 착수 전에 확인해야 합니다. 위반 소지가 있으면 수동 복사 모드만 유지합니다.
-*   **질문 6 (Cloudflare R2 결제수단 등록 조건):** Cloudflare R2 무료 티어(월 10 GB) 범위 내에서만 사용하더라도 버킷 활성화 과정에서 결제수단 등록을 필수로 요구하는지 사전 확인이 필요합니다. 등록만 요구하고 무료 한도 안에서 과금이 없다면 등록 후 사용량 알림을 설정해 R2를 유지합니다. 등록 자체를 받아들이지 않는다면 마일스톤 1 착수 전에 대체 이미지 저장소(후보 A: 별도 이미지 전용 D1 DB의 BLOB 저장 — 행당 1 MB·DB당 500 MB 한도로 월 150 MB 기준 약 3개월마다 오래된 이미지 정리 또는 샤드 DB 분리 필요, 후보 B: 이미지 전용 Firestore 잔류안 — 문서당 1 MiB·저장 1 GiB 한도)를 결정합니다. 어떤 대체안을 쓰더라도 1 MB 한도 안에 들도록 긴 변 상한을 낮추고(예: 1,600px) 파일 크기 상한(예: 700 KB)을 둡니다. Cloud Storage for Firebase는 대안 C의 이유로 후보에서 제외합니다.
+*   **질문 6 (Cloudflare R2 결제수단 등록 조건):** Cloudflare R2 무료 티어(월 10 GB) 범위 내에서만 사용하더라도 버킷 활성화 과정에서 결제수단 등록을 필수로 요구하는지 사전 확인이 필요합니다. 등록만 요구하고 무료 한도 안에서 과금이 없다면 등록 후 사용량 알림을 설정해 R2를 유지합니다. 등록 자체를 받아들이지 않는다면 마일스톤 1 착수 전에 대체 이미지 저장소(후보 A: 별도 이미지 전용 D1 DB의 BLOB 저장 — 문자열·BLOB·행당 2 MB(2,000,000 바이트)·DB당 500 MB 한도로 월 150 MB 기준 약 3개월마다 오래된 이미지 정리 또는 샤드 DB 분리 필요, 후보 B: 이미지 전용 Firestore 잔류안 — 문서당 1 MiB·저장 1 GiB 한도)를 결정합니다. 어떤 대체안을 쓰더라도 두 후보의 더 엄격한 1 MiB 한도 안에 들도록 긴 변 상한을 낮추고(예: 1,600px) 파일 크기 상한(예: 700 KB)을 둡니다. Cloud Storage for Firebase는 대안 C의 이유로 후보에서 제외합니다.
 *   **질문 7 (1차 출처 인정 범위):** `explainer`의 사실 주장 근거로 인정할 1차 출처의 범위를 확정해야 합니다. 기본안은 제조사·서비스 공식 문서, 공식 발표·보도자료, 표준·사양 문서를 1차 출처로 보고, `news.json`·`blog.json`으로 수집한 문서는 글감 근거와 교차 확인용 2차 출처로만 쓰는 것입니다. 확정한 범위로 카테고리별 1차 출처 도메인 허용 목록(`primary_source_domains`)의 초기값을 정합니다.
 *   **질문 8 (스마트에디터 ONE 자동 임시저장 및 복구 모달):** 스마트에디터 ONE이 작성 중인 글을 자동으로 임시저장하는지(세션 만료 시 자동으로 임시저장되었다는 사용자 보고가 있음), 편집기를 열 때 뜨는 복구 모달("작성 중인 글이 있습니다")의 표시 조건과 각 선택지가 기존 임시저장 글을 지우는지 마일스톤 2 착수 전에 확인해야 합니다. 결과에 따라 §5의 `FAILED` 안내 문구와 §4의 복구 모달 처리 규칙을 확정합니다.
 *   **질문 9 (Workers CPU 10ms 실측):** 원고 생성 요청, 대조·정제 요청, 순위 추적 크론 1회 실행이 요청당 CPU 10ms 안에 드는지 실측해야 합니다. 특히 출처 스냅샷 정규화·대조, HTML 정제, 검색 결과 100건 응답 처리 비용을 측정해 §3의 요청 분할 단위와 크론 실행당 처리 쌍 수를 정합니다. (D1 전환으로 서비스 계정 JWT 서명 항목은 제거되었습니다.)
@@ -126,11 +126,11 @@ flowchart LR
 
 *   **클라이언트 단일 페이지 앱 (Cloudflare Pages 정적 배포, 기기 브라우저에서 실행):** Pages는 정적 파일만 내려주며, 정적 파일 요청은 Workers 일 요청 한도에 합산되지 않습니다. 휴대폰에서는 촬영 일시 추출, 긴 변 상한으로 축소한 재인코딩(위치 EXIF 제거), 현장 메모 업로드를 담당합니다. 갤럭시 탭과 PC에서는 글감 발굴 단계 호출, 브라우저 내 N-gram 유사도 계산(Workers 요청당 CPU 10ms 한도 회피), 검증 게이트 검토·승인, 수동 복사 패널(`ClipboardItem` 서식 복사, 순번 JPEG 웹 공유 API 공유 및 다운로드), 발행 URL(`logNo`)·일일 방문자 수 입력, 전체 데이터 내보내기를 수행합니다. 로그인은 Firebase Auth 클라이언트 SDK로 하고, 이후 모든 데이터 접근은 ID 토큰을 붙여 Workers를 거칩니다.
 *   **코어 백엔드 API (Cloudflare Workers):** 유일한 클라우드 서버 실행 계층입니다.
-    *   **ID 토큰 검증:** 모든 요청에서 Firebase ID 토큰의 RS256 서명(Google 공개키), `aud`(Firebase 프로젝트 ID), `iss`(`https://securetoken.google.com/<프로젝트 ID>`), `exp`·`iat`·`auth_time`, 비어 있지 않은 `sub`를 검증하고, 허용 UID 목록에 없는 요청을 차단합니다. 토큰 서명 키는 모든 Firebase 프로젝트가 같이 쓰므로, `aud`·`iss`를 확인하지 않으면 다른 프로젝트에서 같은 UID로 만든 토큰이 통과합니다. Google 공개키는 응답의 캐시 만료 시간까지 Workers 전역 메모리에 캐시하며, GCP 서비스 계정 비밀키는 사용하지 않습니다.
+    *   **ID 토큰 검증:** 모든 요청에서 Firebase ID 토큰의 RS256 서명(Google X.509 공개키), `aud`(Firebase 프로젝트 ID), `iss`(`https://securetoken.google.com/<프로젝트 ID>`), `exp`·`iat`·`auth_time`, 비어 있지 않은 `sub`를 검증하고, 허용 UID 목록(`wrangler.toml` `vars` 환경 변수 `ALLOWED_UIDS`)에 없는 요청은 모든 API에서 `403 Forbidden`으로 차단합니다(가입 경로 차단의 최종 방어선). `iat`·`auth_time`은 시계 오차 60초를 허용해 미래 시각을 거부하며, 일반 API는 최대 세션 기간 **14일**(`now - auth_time <= 14일`, 초과 시 `401 SESSION_EXPIRED`), 민감 작업(전체 데이터 내보내기 `POST /api/export`, PC 브리지 페어링 토큰 발급·폐기 `POST/DELETE /api/bridge/tokens`, PC 브리지 작업 등록 `POST /api/bridge/jobs`)은 **최근 15분 이내 재인증**(`now - auth_time <= 15분`, 초과 시 `401 REAUTH_REQUIRED`)을 강제합니다. 토큰 서명 키는 모든 Firebase 프로젝트가 같이 쓰므로, `aud`·`iss`를 확인하지 않으면 다른 프로젝트에서 같은 UID로 만든 토큰이 통과합니다. Google 공개키는 응답의 `Cache-Control` 만료 시간까지 Workers 전역 메모리에 캐시하며, GCP 서비스 계정 비밀키는 사용하지 않습니다.
     *   **Cloudflare D1 접근:** Workers 내부 바인딩(`env.DB`)으로 SQL을 직접 실행합니다. 무료 플랜의 Worker 호출당 D1 쿼리 50개 한도를 지키기 위해 연관 쓰기·선점·할당량 차감은 `batch()` 트랜잭션으로 묶어 실행합니다.
     *   **그 밖의 역할:** R2 단기 서명 URL 발급, 외부 API(네이버 검색·웹문서 검색·데이터랩·선택형 검색광고 `/keywordstool`, Google Trends RSS, 1차 출처 웹페이지, 교체 가능한 LLM·이미지 생성 제공자 어댑터) 호출, 일일 할당량 원장 차감, PC 브리지 작업 대기열(`BridgeJob`)과 상태 신호 관리를 담당합니다. 발행 후 순위 추적과 만료 작업 정리는 크론 트리거로 실행합니다.
-*   **인증 (Firebase Auth — Spark 무료 플랜) 및 영속 저장소 (Cloudflare D1 — SQLite):** 로그인·ID 토큰 발급은 Firebase Auth(Spark)로 수행하고, 모든 영속 데이터(`CategoryProfile`, `CaptureAsset`, `TopicDiscoveryJSON`, `NaverBlogManuscriptBundle`, `BridgeJob`·`PublishReceipt`, 실행 원장, 할당량 원장, 발행 기록, 일일 방문자 수)는 Cloudflare D1에 저장합니다. D1은 외부 공개 엔드포인트 없이 Workers 바인딩으로만 접근하며, 스캔 행 수(`rows_read`) 증가를 막기 위해 `WHERE`·`ORDER BY` 컬럼에 필수 인덱스를 두고 7일 Time Travel 시점 복구를 기본 백업으로 활용합니다.
-*   **미디어 객체 저장소 (Cloudflare R2):** D1 행당 1 MB·DB당 500 MB 제한을 피하기 위해 압축된 사용자 실사, AI 개념 도식 이미지, 1차 출처 본문 스냅샷 텍스트를 저장합니다. 클라이언트와 PC 브리지는 Workers가 발급한 짧은 만료 시간의 서명 URL로만 객체에 접근합니다. 탭에서 이미지를 캔버스로 그려 JPEG로 변환하려면 교차 출처 이미지를 읽어야 하므로, 버킷 CORS에 대시보드 출처의 `GET`·`PUT`을 허용합니다(미설정 시 캔버스가 오염되어 이미지 내보내기가 실패합니다).
+*   **인증 (Firebase Auth — Spark 무료 플랜, 이메일/비밀번호 단독 로그인) 및 영속 저장소 (Cloudflare D1 — SQLite):** 로그인·ID 토큰 발급은 Firebase Auth(Spark) **이메일/비밀번호 단독 로그인**으로 수행합니다(Google 로그인은 모바일 팝업·서드파티 저장소 제약 회피를 위해 1차 범위에서 제외하며, 추후 필요 시 동일 UID에 `linkWithPopup`으로 연결 확장 가능). 클라이언트 세션은 `browserLocalPersistence`(IndexedDB)로 유지하고 비밀번호 관리자 자동 완성(`autocomplete`)을 지원하며, 클라이언트 회원가입 UI·가입 호출은 제공하지 않고 Firebase 콘솔의 가입(create) 비활성화 가능 여부(Spark)와 이메일 열거 보호 활성화를 배포 전 점검합니다. 유일한 계정 복구 경로로 비밀번호 재설정 메일(`sendPasswordResetEmail`) 흐름을 제공합니다. 모든 영속 데이터(`CategoryProfile`, `CaptureAsset`, `TopicDiscoveryJSON`, `NaverBlogManuscriptBundle`, `BridgeJob`·`PublishReceipt`, 실행 원장, 할당량 원장, 발행 기록, 일일 방문자 수)는 Cloudflare D1에 저장하며, D1은 외부 공개 엔드포인트 없이 Workers 바인딩으로만 접근하고 스캔 행 수(`rows_read`) 증가를 막기 위해 `WHERE`·`ORDER BY` 컬럼에 필수 인덱스를 두며 7일 Time Travel 시점 복구를 기본 백업으로 활용합니다.
+*   **미디어 객체 저장소 (Cloudflare R2):** D1 문자열·BLOB·행당 2 MB(2,000,000 바이트)·DB당 500 MB 제한을 피하기 위해 압축된 사용자 실사, AI 개념 도식 이미지, 1차 출처 본문 스냅샷 텍스트를 저장합니다. 클라이언트와 PC 브리지는 Workers가 발급한 짧은 만료 시간의 서명 URL로만 객체에 접근합니다. 탭에서 이미지를 캔버스로 그려 JPEG로 변환하려면 교차 출처 이미지를 읽어야 하므로, 버킷 CORS에 대시보드 출처의 `GET`·`PUT`을 허용합니다(미설정 시 캔버스가 오염되어 이미지 내보내기가 실패합니다).
 *   **PC 자동 임시저장 브리지 (Windows 호스트 전용, 마일스톤 2):** 상시 실행되는 폴러 프로세스와 작업마다 실행하는 `ego-browser` 스크립트로 나뉩니다. 폴러는 로컬 수신 포트를 열지 않고 기기 페어링 토큰으로 Workers에 나가는 요청만 보내며, 작업은 한 번에 1건만 가져갑니다. 작업을 가져오면 R2 서명 URL로 이미지를 내려받아 원고 JSON과 함께 로컬 파일로 저장한 뒤 `ego-browser` 스크립트를 실행합니다. `ego-browser` 스크립트는 실행마다 새 Node 프로세스로 돌고 환경 변수를 물려받지 않으므로, 페어링 토큰은 폴러에만 두고 스크립트에는 원고·이미지 파일의 절대 경로만 넘깁니다. 스크립트는 Windows PC의 `ego lite`에서 스마트에디터 ONE 임시저장까지만 수행하고, 결과는 폴러가 `PublishReceipt`로 Workers에 보고합니다.
 
 ### 2. 핵심 데이터 모델 및 2티어 스키마 계약
@@ -189,7 +189,7 @@ flowchart LR
     *   `EGO_NOT_INSTALLED`: 폴러가 `ego-browser` 명령을 찾지 못했다고 보고 — 설치 안내(`https://lite.ego.app/`) 표시.
     *   `NAVER_LOGIN_REQUIRED`: 마지막 작업의 사전 점검에서 `ego lite`의 네이버 미로그인이 확인됨 — 확인 시각과 함께 PC 로그인 요청 표시. 로그인 상태를 상태 신호로 계속 확인하려면 `ego lite`에 페이지를 열어야 해 사용자 화면에 보이고 비용이 크므로 상시 확인하지 않습니다. 이 상태에서도 작업 등록은 허용하며, 여전히 미로그인이면 작업이 시작 단계에서 `AUTH_REQUIRED`로 멈춥니다.
     *   `READY`: `[PC로 임시저장]` 활성화(갤럭시 탭에서도 PC 대기열로 작업 등록 가능).
-*   **주기 조회·상태 신호 예산:** 브리지 폴러는 30초 이상 간격으로 대기열을 조회하고, `last_seen`은 상태가 바뀔 때 또는 5분 간격으로만 기록합니다. D1 무료 플랜의 일 읽기 500만 행·쓰기 10만 행 한도에서 PC를 하루 종일 켜 둔 30초 폴링(일 2,880회)은 0.1% 미만이지만, 대기열 조회 쿼리가 풀 테이블 스캔을 타지 않도록 `(status, created_at)` 인덱스를 두고 페어링 토큰 해시 검증 결과도 5분간 Workers 메모리에 캐시합니다(토큰 폐기는 최대 이 시간 뒤에 반영).
+*   **주기 조회·상태 신호 예산:** 브리지 폴러는 30초 이상 간격으로 대기열을 조회하고, `last_seen`은 상태가 바뀔 때 또는 5분 간격으로만 기록합니다. D1 무료 플랜의 일 읽기 500만 행·쓰기 10만 행 한도에서 PC를 하루 종일 켜 둔 30초 폴링(일 2,880회)은 0.1% 미만이지만, 대기열 조회 쿼리가 풀 테이블 스캔을 타지 않도록 `(status, created_at)` 인덱스를 둡니다. 페어링 토큰은 메모리 캐시 없이 매 요청 D1에서 해시와 `revoked_at IS NULL`을 직접 확인해, 토큰을 폐기하거나 유출로 끊을 때 즉시 차단되도록 합니다.
 *   **마일스톤 1 (기본 수동 복사 모드):** 갤럭시 탭 분할 화면(멀티 윈도우) 기준으로 동작합니다. 스마트에디터 ONE이 마크다운 문법과 HTML 외부 이미지 핫링크를 차단하므로 본문과 이미지를 분리 전달합니다. `[제목 복사]`(권장 게시판·공개 범위 안내 포함), `[서식 유지 본문 복사]`(`ClipboardItem`으로 `text/html` + `text/plain` 및 `[📷 이미지 N 삽입 위치: 캡션]` 마커·공정위/AI 표시 복사, 일반 텍스트 복사 대체 경로 제공), `[이미지 내보내기]`(JPEG 변환 및 `01_캡션.jpg` 순번 파일명 부여, 탭에서는 웹 공유 API 다중 공유 또는 일괄 다운로드, PC에서는 PNG 클립보드 복사 또는 일괄 다운로드), `[태그 일괄 복사]`, `[네이버 블로그 글쓰기 열기]` 바로가기를 제공합니다. 탭에서는 `navigator.share`를 클릭 직후 몇 초(크롬 약 5초) 안에만 호출할 수 있으므로, 이미지 JPEG 변환은 `[이미지 내보내기]` 패널을 열 때 미리 끝내 두고 클릭 시에는 공유만 호출합니다.
 *   **마일스톤 2 (PC `ego-browser` 임시저장, 작업 가져가기 방식):** 기기 페어링 토큰(대시보드에서 폐기 가능)으로 인증한 폴러가 승인된 `NaverBlogManuscriptBundle` 작업을 §5의 상태 규칙에 따라 한 번에 1건씩 가져갑니다. 여러 작업이 `ego lite` 공용 프로필과 편집기를 동시에 쓰면 복구 모달과 클립보드가 서로 섞이기 때문입니다. 실행 시 R2 서명 URL로 이미지를 내려받고(R2 접근 키 미보관), `ego-browser` 스크립트가 편집기를 연 뒤 복구 모달 확인, `#mainFrame` 셀렉터 사전 점검과 네이버 로그인 확인을 통과하면 `CategoryProfile.naver_board_name`(또는 `일상/브이로그`) 게시판 선택, 본문 입력, 이미지 업로드, 임시저장 클릭을 수행합니다.
     *   **복구 모달:** 편집기를 열 때 "작성 중인 글이 있습니다" 복구 모달이 뜨면 어떤 선택지도 누르지 않고 작업을 `FAILED`(사유: 작성 중인 글 존재)로 끝냅니다. 모달에서 새로 쓰기를 고르면 탭에서 쓰던 글이 사라질 수 있기 때문입니다. 작성자는 기존 글을 정리한 뒤 새 작업으로 다시 요청합니다. 모달의 표시 조건과 선택지 동작은 미결 질문 8에서 확인합니다.
@@ -335,7 +335,7 @@ stateDiagram-v2
 
 ### 보안 및 개인정보 보호
 
-*   **단일 사용자 인증 및 서버 경유 접근:** 모든 API 요청은 Workers에서 Firebase ID 토큰의 RS256 서명(Google 공개키), `aud`·`iss`·`exp`·`iat`·`auth_time` 클레임, 허용 UID 목록을 검증합니다. Cloudflare D1은 외부 공개 엔드포인트 없이 Workers 내부 바인딩(`env.DB`)으로만 접근하며, Workers API는 대시보드 출처만 CORS로 허용합니다. GCP 서비스 계정 비밀키는 보관하지 않습니다.
+*   **단일 사용자 인증 및 서버 경유 접근:** Firebase Auth 이메일/비밀번호 단독 로그인과 `browserLocalPersistence`를 사용하며, 회원가입 UI를 두지 않고 콘솔 가입 비활성화 가능 여부(Spark)와 이메일 열거 보호 활성화를 배포 전 점검합니다. 모든 API 요청은 Workers에서 Firebase ID 토큰의 RS256 서명(Google X.509 공개키), `aud`·`iss`·`exp`·`iat`·`auth_time`(시계 오차 60초, 일반 API 최대 세션 14일, 민감 작업 — 전체 내보내기·페어링 토큰 발급/폐기·브리지 작업 등록 — 15분 재인증), 허용 UID 목록(`wrangler.toml` `vars`)을 검증하며 허용 목록 외 UID는 모든 API에서 `403`으로 차단합니다. 비밀번호 분실 복구를 위해 `sendPasswordResetEmail` 재설정 흐름을 제공합니다. Cloudflare D1은 외부 공개 엔드포인트 없이 Workers 내부 바인딩(`env.DB`)으로만 접근하며, Workers API는 대시보드 출처만 CORS로 허용합니다. GCP 서비스 계정 비밀키는 보관하지 않습니다.
 *   **비밀키 관리:** 네이버·LLM API 키와 R2 서명용 키는 Workers 비밀 환경 변수에만 둡니다. 업로드용 서명 URL은 객체 키와 콘텐츠 형식을 고정하고 짧은 만료 시간으로 발급합니다.
 *   **사진 위치 정보 제거 및 개인 기록 보호:** 휴대폰 업로드 클라이언트는 전송 전 긴 변 상한(2,560px)으로 축소한 캔버스에서 WebP(미지원 시 JPEG)로 재인코딩해 GPS 등 EXIF 위치 정보를 제거합니다. `experience_review`·`vlog` 메모·사진 설명을 무료 LLM 제공자로 보낼 때는 학습 활용 가능성을 알리고 원고 생성 요청 전에 작성자의 명시 동의를 받은 뒤 텍스트 설명만 전달합니다.
 *   **프롬프트 인젝션 및 XSS 방어:** 외부 출처 본문이 LLM 입력으로 들어가므로 `NaverBlogManuscriptBundle` 본문 HTML은 서버 저장 전과 클라이언트 렌더링 전에 각각 허용 태그(문단·소제목·굵게·목록·인용구·링크)만 남기고 모든 속성을 제거하며, 링크는 출처 목록에 있는 `http`·`https` URL만 남깁니다. 검증 게이트의 외부 인용구는 텍스트로만 표시합니다.
@@ -360,8 +360,228 @@ stateDiagram-v2
 
 *   [컨셉 브리프](./concepts_brief.md): 시스템 목표, 콘텐츠 트랙, 편집 원칙, 기기별 역할 및 1차 범위 마일스톤 정의
 *   [설계 메모](./docs/designs/content_desk_design_notes.md): 무료 플랜 한도 계산, API 명세, 인증·저장소 세부 설계, 실측 항목 및 초기 검토 이력
+*   [디자인 기준 문서](./DESIGN.md): 색상·타이포그래피·표면 계층 원천 토큰 레퍼런스
+*   [Cloudflare D1 공식 한도](https://developers.cloudflare.com/d1/platform/limits/): 문자열·BLOB·행당 2,000,000 바이트(2 MB), DB당 500 MB, 호출당 쿼리 50개 및 `batch()` 규정 근거
+*   [Cloudflare D1 무료 티어 일일 한도 강제 공지 (2026-09-01)](https://developers.cloudflare.com/changelog/post/2026-09-01-d1-free-tier-limit-enforcement/): 2026-09-01 이후 D1 무료 한도 초과 시 쿼리 오류 반환 근거
 
 ## 향후 개선
 
 *   **다중 플랫폼 출력 어댑터 확장 (2차 범위 이후):** 1티어 채널 중립 스키마(`TopicDiscoveryJSON`)를 기반으로 유튜브 대본, 인스타그램 카드뉴스 등 타 플랫폼용 2티어 출력 묶음과 발행 경로 어댑터를 추가할 수 있습니다.
 *   **1차 출처 도메인 허용 목록 추천:** 작성자가 `[VERIFY]` 해소나 직접 입력에 자주 쓴 도메인을 카테고리별 허용 목록(`primary_source_domains`) 후보로 제안해 목록 관리 부담을 줄일 수 있습니다.
+
+--------------------------------------------------------------------------------
+
+## 상세 구현 계획
+
+본 절은 마일스톤 1(갤럭시 탭 수동 복사 중심 전체 흐름)을 단독 완결하고, 오너의 네이버 이용약관 검토 완료 및 미결 질문 8 확인 이후 마일스톤 2(Windows PC `ego-browser` 브리지)로 확장하기 위한 단일 구현 목록과 검증 계획을 정의합니다. 기준 문서 우선순위는 [`concepts_brief.md`](./concepts_brief.md) > [`design_draft.md`](./design_draft.md) > [`docs/designs/content_desk_design_notes.md`](./docs/designs/content_desk_design_notes.md) > [`DESIGN.md`](./DESIGN.md)입니다.
+
+### 확정 기술 스택·라이브러리 및 공통 규칙
+
+*   **모노레포:** `pnpm` workspace + `pnpm-workspace.yaml` `catalog:`로 `typescript`, `zod`, `vitest` 등 공통 의존성 버전을 단일 고정합니다(`packages/shared`, `apps/web`, `apps/worker`, `apps/pc-bridge`).
+*   **프론트엔드 (`apps/web`):** React + Vite + TypeScript + Tailwind CSS v4(`@theme inline`에 [`DESIGN.md`](./DESIGN.md) 중립화 토큰 정의, `--color-*: initial`로 기본 팔레트 제거) + TanStack Query + Firebase Auth JS SDK(`firebase/auth` modular, 이메일/비밀번호 단독) + `exifr`(`readCaptureMeta` 어댑터 래핑, 교체 후보 `ExifReader`).
+    *   브라우저 지원 하한: 최소 **Safari 16.4+** (권장 **17+**), **Chrome 111+** (갤럭시 탭 Chrome 기준, 삼성 인터넷 미지원), **Firefox 128+**. Vite `build.target`을 `['es2022', 'safari16.4', 'chrome111', 'firefox128']`로 고정합니다.
+    *   `DESIGN.md` 모바일·태블릿 적응: 브랜드명 토큰 중립화(`--color-brand`, `--color-cta`, `--color-band` 등), `:root` 의미 변수 분리(1차 범위 다크 모드 제외), `Pretendard Variable` 동적 서브셋(serif·script 미사용), 루트 `62.5%` 미사용(`16px` 기준), 한글 `word-break: keep-all`·긴 URL `overflow-wrap: anywhere`·본문 `line-height: 1.65`, 터치 타깃 최소 `44px`(탭 반복 복사 버튼 `48px` + 간격 `8px+`), 입력창 `>= 16px`(iOS 자동 확대 방지), `@container` 쿼리·`h-dvh`·`viewport-fit=cover` + `env(safe-area-inset-bottom)` 하단 고정 액션 바, 상태 색 체계(`[VERIFY]`·승인·승인 후 수정·YMYL 차단·`BridgeJob`, `#fbbc05` 배경+어두운 글자+아이콘/라벨 병행, 골드 `#cba258`은 협찬 `is_sponsored` 배지 전용), 원고 미리보기 테마 격리.
+*   **백엔드 (`apps/worker`):** Cloudflare Workers + Hono(`hono/cors`, `app.onError`, `hc` RPC 타입 공유, `{ fetch, scheduled }`) + `@hono/standard-validator` + `jose`(`importX509` + `jwtVerify`, Firebase 공식 X.509 인증서 엔드포인트 + `Cache-Control max-age` isolate 캐시) + Cloudflare D1(`env.DB`, `wrangler d1 migrations` 단일 원천, `wrangler types`, 얇은 repository 계층, `batch()` 트랜잭션) + Cloudflare R2(WebCrypto AWS SigV4 단기 서명 URL) + Workers 내장 `HTMLRewriter`.
+    *   **`zod` 4.x (`>= 4.4.0`) 규칙:** `packages/shared`에만 직접 의존하고 타 패키지는 `@content-desk/shared`에서 import합니다. Worker 진입점 최상단(첫 스키마 정의·실행 전)에 `z.config({ jitless: true })`를 명시해 `eval`/`new Function` 탐지를 차단합니다. zod 3 문법을 금지하고 zod 4 문법(`z.strictObject`, `z.email()`, `z.iso.datetime()`, `{ error }` 옵션)만 사용하며, 대용량 외부 응답(`blog.json` 100건 등)은 필수 필드만 검증합니다.
+    *   **금지 의존성:** Worker 번들에 `firebase-admin`, `jsdom`, `cheerio`, `@aws-sdk/*` 전체 번들 금지. 클라이언트 1차 범위에 wasm HEIC 디코더 제외.
+*   **인증·세션·환경 변수 분리:**
+    *   Firebase Auth(Spark) **이메일/비밀번호 단독 로그인** (Google 로그인 1차 제외, 추후 동일 UID `linkWithPopup` 확장 가능). 회원가입 UI·`createUserWithEmailAndPassword` 금지.
+    *   `ALLOWED_UIDS`·`FIREBASE_PROJECT_ID`·`ALLOWED_ORIGINS`는 비밀키가 아니므로 `wrangler.toml` `vars`(일반 환경 변수)로 통일하고, 네이버 API·LLM·R2 서명 키만 Workers Secret으로 관리합니다.
+    *   세션 기준: 클라이언트 `browserLocalPersistence` + 비밀번호 관리자 `autocomplete`, Workers `iat`/`auth_time` 시계 오차 `60초`, 일반 API `now - auth_time <= 14일`(`401 SESSION_EXPIRED`), 민감 작업(`POST /api/export`, `POST/DELETE /api/bridge/tokens`, `POST /api/bridge/jobs`) `now - auth_time <= 15분`(`401 REAUTH_REQUIRED` → `reauthenticateWithCredential` + `getIdToken(true)`).
+    *   허용 UID 외 유효 토큰은 모든 API에서 `403 Forbidden` 반환(가입 경로 차단의 최종 방어선). PC 브리지 페어링 토큰은 메모리 캐시 없이 매 요청 D1에서 `token_hash` 및 `revoked_at IS NULL`을 직접 검증해 폐기가 즉시 반영되게 합니다.
+
+### 생성·수정 대상 파일 목록 (Single Implementation List)
+
+#### A. 문서 정합화 (현재 단계 선행 반영)
+
+1.  **[`./concepts_brief.md`](./concepts_brief.md)** (`Modify` — 기준 문서)
+    *   **변경 내용 및 근거:** 핵심 결정 표의 인프라 구성을 `Firebase Auth(Spark) + Cloudflare D1 + Cloudflare R2`로 정합화해 최우선 기준 문서와 설계 초안·설계 메모 간 불일치를 해소합니다.
+2.  **[`./design_draft.md`](./design_draft.md)** (`Modify` — 설계 초안)
+    *   **변경 내용 및 근거:** §1·§4·비기능 요구사항·참고 자료에 이메일/비밀번호 단독 로그인, `auth_time` 세션/재인증 기준(14일·15분, `POST /api/bridge/jobs` 포함), 페어링 토큰 캐시 제거(즉시 폐기), D1 행 크기 공식 한도(`2 MB` / `2,000,000 바이트`), D1 공식 근거 링크 및 본 상세 구현 계획을 반영합니다.
+3.  **[`./docs/designs/content_desk_design_notes.md`](./docs/designs/content_desk_design_notes.md)** (`Modify` — 설계 메모)
+    *   **변경 내용 및 근거:** §2(인증 및 접근 제어), §3(D1 행 크기 2 MB), §5(페어링 토큰 캐시 제거)를 `design_draft.md`와 동일한 기준으로 맞춥니다.
+4.  **[`./DESIGN.md`](./DESIGN.md)** (`Create` — 디자인 기준 문서)
+    *   **변경 내용 및 근거:** 프론트엔드 색 블록·그린 4단계·크림 캔버스·카드/버튼 원형 토큰의 원천 레퍼런스로 저장소에 포함합니다(실제 CSS 적용 시 중립화·한글/태블릿 적응 규칙 적용).
+
+#### B. 루트 및 모노레포 설정 (Phase 1)
+
+5.  **`./pnpm-workspace.yaml`** (`Create` — 워크스페이스 설정)
+    *   **변경 내용 및 근거:** `packages/*`, `apps/*` 워크스페이스 선언 및 `catalog:`에 `typescript`, `zod`(4.4+), `vitest`, `@cloudflare/vitest-pool-workers` 호환 버전을 단일 고정해 모노레포 버전 충돌을 차단합니다.
+6.  **`./package.json`** (`Create` — 루트 스크립트)
+    *   **변경 내용 및 근거:** `dev`(로컬 D1 `wrangler dev` + `vite dev` `/api` 프록시 동시 실행), `build`, `typecheck`, `lint`, `test`, `db:migrate:local` 통합 스크립트를 정의해 1인 개발 실행 경로를 단순화합니다.
+7.  **`./tsconfig.base.json`** (`Create` — TypeScript 공통 설정)
+    *   **변경 내용 및 근거:** `strict`, `noUncheckedIndexedAccess`, `moduleResolution: "bundler"`, 경로 매핑을 통일해 공유 패키지와 앱 간 타입 계약을 강제합니다.
+8.  **`./.gitignore`** (`Create` — Git 무시 규칙)
+    *   **변경 내용 및 근거:** `node_modules/`, `dist/`, `.wrangler/`, `.dev.vars`, `.env*`, 커버리지 산출물을 제외해 비밀키와 로컬 D1 파일의 저장소 유입을 원천 차단합니다.
+
+#### C. 공유 계약 패키지 `packages/shared/` (Phase 1)
+
+9.  **`./packages/shared/package.json`** (`Create` — 패키지 매니페스트)
+    *   **변경 내용 및 근거:** `@content-desk/shared` 패키지 선언 및 `zod`(catalog) 단일 의존성 배치.
+10. **`./packages/shared/src/zod.ts`** (`Create` — 스키마 유틸 진입점)
+    *   **변경 내용 및 근거:** `zod` 4를 re-export해 `web`·`worker`·`pc-bridge`가 동일한 단일 인스턴스와 버전을 사용하도록 강제합니다.
+11. **`./packages/shared/src/schemas/category.ts`** (`Create` — Zod 4 스키마)
+    *   **변경 내용 및 근거:** `CategoryProfile` 생성/수정/조회 스키마 및 `discovery_mode`(`trend_first`/`experience_first` 시 `datalab_anchor_keyword` 필수), `explainer` 허용 시 `primary_source_domains` 필수 조건부 검증 정의.
+12. **`./packages/shared/src/schemas/capture.ts`** (`Create` — Zod 4 스키마)
+    *   **변경 내용 및 근거:** `CaptureAsset`, R2 서명 URL 요청(`seq`, `image/webp`|`image/jpeg` 허용, 최대 20장), `sponsorship`, 무료 LLM 전송 동의 페이로드 스키마 정의.
+13. **`./packages/shared/src/schemas/topic.ts`** (`Create` — Zod 4 스키마)
+    *   **변경 내용 및 근거:** 1티어 `TopicDiscoveryJSON`, 단계별 발굴(step1~step3) 및 1차 출처 후보·스냅샷 요청/응답 스키마, `content_type` 허용 조합 검증 규칙 정의.
+14. **`./packages/shared/src/schemas/manuscript.ts`** (`Create` — Zod 4 스키마)
+    *   **변경 내용 및 근거:** 2티어 `NaverBlogManuscriptBundle`, 주장(`claim`, `source_id`, `quote`, `[VERIFY]` 해소 상태), 수정·승인(`content_hash`) 요청/응답 스키마 정의.
+15. **`./packages/shared/src/schemas/publish.ts`** (`Create` — Zod 4 스키마)
+    *   **변경 내용 및 근거:** 발행 URL(`logNo`)·타겟 키워드 등록, 순위 이력, 일일 방문자 수, 대시보드 요약(`C-Rank` 비중·할당량·R2 용량·백업 30일 경과 알림), 전체 JSON 내보내기 스키마 정의.
+16. **`./packages/shared/src/schemas/bridge.ts`** (`Create` — Zod 4 스키마, M2 계약)
+    *   **변경 내용 및 근거:** `BridgeJob` 10개 상태, `PublishReceipt`, 브리지 상태 4종, 페어링 토큰 발급/폐기 및 폴러 API 요청/응답 스키마 정의.
+17. **`./packages/shared/src/domain/content-hash.ts`** (`Create` — 순수 도메인 모듈)
+    *   **변경 내용 및 근거:** 선택한 제목, 정제 본문 HTML(마커 포함), 이미지 순번·캡션·R2 참조, 태그, 공정위 문구·AI 표시·`sponsorship`, 공개 범위, 게시판을 결정적으로 직렬화해 SHA-256 `content_hash`를 계산합니다(WebCrypto 공용, 승인 무결성 단일 원천).
+18. **`./packages/shared/src/domain/html-sanitize.ts`** (`Create` — 순수 도메인 모듈)
+    *   **변경 내용 및 근거:** 허용 태그(`p`, `h2`, `h3`, `strong`, `ul`, `ol`, `li`, `blockquote`, `a`, `br`) 외 태그 제거, 모든 속성 제거, `<a>`는 출처 허용 목록의 `http`/`https` URL일 때만 `href` 유지하는 클라이언트·테스트 공용 정제 규칙을 제공합니다.
+19. **`./packages/shared/src/domain/manuscript.ts`** (`Create` — 순수 도메인 모듈)
+    *   **변경 내용 및 근거:** `[📷 이미지 N 삽입 위치: 캡션]` 마커 기준 구간 분할(M1 복사·M2 `keyboard.paste` 공유), 순번 파일명(`01_캡션.jpg`) 생성, 협찬 공정위 문구·AI 활용 표시 삽입·검증 규칙을 단일화합니다.
+20. **`./packages/shared/src/domain/ymyl.ts`** (`Create` — 순수 도메인 모듈)
+    *   **변경 내용 및 근거:** 주식·금융·투자·암호화폐·의료·건강·법률 1차 차단 키워드 목록과 공백·기호 정규화 매칭 로직을 정의합니다.
+21. **`./packages/shared/src/domain/errors.ts`** (`Create` — 공통 에러 코드)
+    *   **변경 내용 및 근거:** `UID_NOT_ALLOWED`, `TOKEN_INVALID`, `SESSION_EXPIRED`, `REAUTH_REQUIRED`, `VERIFY_UNRESOLVED`, `HASH_MISMATCH`, `LLM_CONSENT_REQUIRED`, `QUOTA_EXCEEDED`, `D1_DAILY_LIMIT_EXCEEDED` 등 API 에러 코드 상수와 응답 스키마를 통일합니다.
+22. **`./packages/shared/src/index.ts`** (`Create` — 패키지 export 진입점)
+    *   **변경 내용 및 근거:** 스키마·도메인 함수·`zod`를 명시적으로 re-export합니다.
+23. **`./packages/shared/test/*.test.ts`** (`Create` — 단위 테스트)
+    *   **변경 내용 및 근거:** `content-hash`, `html-sanitize`(XSS 차단), `manuscript`(구간 분할·파일명·공정위 문구), `ymyl`(1차 차단), zod 4 스키마 계약 단위 테스트.
+
+#### D. 코어 백엔드 `apps/worker/` (Phase 1~4: M1, Phase 5: M2)
+
+24. **`./apps/worker/package.json`** (`Create` — 패키지 매니페스트)
+    *   **변경 내용 및 근거:** `hono`, `@hono/standard-validator`, `jose`, `@content-desk/shared` 및 개발 의존성(`wrangler`, `@cloudflare/vitest-pool-workers`) 정의. 금지 의존성 미포함.
+25. **`./apps/worker/wrangler.toml`** (`Create` — Workers 배포·바인딩 설정)
+    *   **변경 내용 및 근거:** D1(`DB`), R2(`MEDIA_BUCKET`), Cron Trigger(`0 * * * *`), 일반 환경 변수 `vars`(`FIREBASE_PROJECT_ID`, `ALLOWED_UIDS`, `ALLOWED_ORIGINS`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`, `SESSION_MAX_AGE_SECONDS = 1209600`, `REAUTH_MAX_AGE_SECONDS = 900`, `CLOCK_SKEW_SECONDS = 60`) 선언. 비밀키는 Secret으로만 주입.
+26. **`./apps/worker/vitest.config.ts`** (`Create` — Worker 테스트 설정)
+    *   **변경 내용 및 근거:** `@cloudflare/vitest-pool-workers` 설정 및 `readD1Migrations`/`applyD1Migrations` 테스트 격리 구성.
+27. **`./apps/worker/migrations/0001_initial.sql`** (`Create` — D1 마일스톤 1 스키마)
+    *   **변경 내용 및 근거:** M1 영속 테이블 11종과 필수 인덱스 정의(`WHERE`/`ORDER BY` 컬럼 한정으로 풀 스캔과 쓰기 증폭 동시 방지):
+        *   `categories` (`category_id` PK, `display_name` UNIQUE, `discovery_mode`, `datalab_anchor_keyword`, `default_visibility`, `profile_json`)
+        *   `captures` (`capture_id` PK, `category_id` FK, `content_type`, `llm_consent_at`, `capture_json`; 인덱스 `(category_id, created_at DESC)`)
+        *   `topics` (`topic_id` PK, `run_id`, `track`, `category_id` FK, `content_type`, `status`, `ymyl_status`, `topic_json`; 인덱스 `(category_id, status, created_at DESC)`, `(run_id)`)
+        *   `source_snapshots` (`snapshot_id` PK, `topic_id` FK, `url`, `domain`, `ingest_channel`, `r2_key`, `body_sha256`, `char_count`, `fetched_at`; 인덱스 `(topic_id)`)
+        *   `manuscripts` (`manuscript_id` PK, `topic_id` FK, `category_id` FK, `content_type`, `run_id` UNIQUE, `version`, `content_hash`, `approved_hash`, `approved_at`, `unresolved_verify_count`, `bundle_json`; 인덱스 `(approved_at DESC)`, `(category_id, created_at DESC)`)
+        *   `execution_runs` (`run_id` PK, `kind`, `status`, `state_json`)
+        *   `quota_ledger` (`(provider, window_date)` PK, `reset_tz` `UTC`|`America/Los_Angeles`, `daily_cap`, `used`, `reserved`; `d1_reads`·`d1_writes` 보수 상한 행 포함)
+        *   `api_cache` (`cache_key` PK, `payload_json`, `expires_at`, `backoff_until`)
+        *   `published_posts` (`post_id` PK, `manuscript_id` FK, `category_id` FK, `log_no` UNIQUE, `post_url`, `target_keywords_json`, `published_at`, `track_until`, `last_tracked_date`; 인덱스 `(track_until, last_tracked_date)`, `(category_id, published_at DESC)`)
+        *   `rank_history` (`id` PK, `post_id` FK, `keyword`, `rank` NULLABLE, `checked_date`, `checked_at`; UNIQUE `(post_id, keyword, checked_date)`)
+        *   `daily_visitors` (`visit_date` KST PK, `visitor_count`), `app_meta` (`key` PK, `value`)
+28. **`./apps/worker/migrations/0002_bridge.sql`** (`Create` — D1 마일스톤 2 스키마, 게이트 통과 후 적용)
+    *   **변경 내용 및 근거:** `bridge_tokens`(`token_id` PK, `label`, `token_hash` UNIQUE, `revoked_at`), `bridge_status`(`device_id` PK, `status`, `detail`, `last_seen`), `bridge_jobs`(`job_id` PK, `manuscript_id` FK, `manuscript_version`, `approved_hash`, `status`, `is_resume`, `body_input_started`, `ego_task_space_id`, `queue_expires_at`, `lease_expires_at`, `auth_wait_expires_at`, `failure_reason`, `receipt_json`, `history_json`; 인덱스 `(status, created_at ASC)`, `(manuscript_id, status)`).
+29. **`./apps/worker/src/index.ts`** (`Create` — Workers 진입점)
+    *   **변경 내용 및 근거:** 파일 최상단에서 `z.config({ jitless: true })` 실행 후 Hono 앱 구성(`cors`, `onError`, 라우트 마운트, `AppType` export) 및 `{ fetch, scheduled }` 내보내기.
+30. **`./apps/worker/src/middleware/error-handler.ts`** (`Create` — 공통 에러 미들웨어)
+    *   **변경 내용 및 근거:** 도메인 오류·Zod 검증 오류·D1 무료 한도 초과 오류(`503 D1_DAILY_LIMIT_EXCEEDED` + 다음 UTC 00:00 `reset_at`)를 표준 JSON 형식으로 정규화하고 내부 스택·비밀키 노출을 차단합니다.
+31. **`./apps/worker/src/middleware/firebase-auth.ts`** (`Create` — Firebase ID 토큰 검증 미들웨어)
+    *   **변경 내용 및 근거:** Google X.509 엔드포인트에서 `Cache-Control max-age` 동안 isolate 메모리에 `kid`별 공개키(`importX509`) 캐시(미지 `kid` 시 최대 1회 재조회), `jwtVerify`(`RS256`, `aud`, `iss`, `exp`), `sub` 비어있지 않음, `iat`/`auth_time <= now + 60`, `now - auth_time <= 14일`(`401 SESSION_EXPIRED`), `ALLOWED_UIDS` 미포함 시 `403 UID_NOT_ALLOWED` 반환.
+32. **`./apps/worker/src/middleware/recent-auth.ts`** (`Create` — 민감 작업 재인증 미들웨어)
+    *   **변경 내용 및 근거:** `POST /api/export`, `POST/DELETE /api/bridge/tokens`, `POST /api/bridge/jobs`에 적용해 `now - auth_time <= 15분` 미충족 시 `401 REAUTH_REQUIRED`를 반환합니다.
+33. **`./apps/worker/src/middleware/bridge-auth.ts`** (`Create` — M2 폴러 인증 미들웨어)
+    *   **변경 내용 및 근거:** 폴러 Bearer 토큰의 SHA-256 해시를 매 요청 D1 `bridge_tokens`(`revoked_at IS NULL`)에서 직접 검증해(메모리 캐시 미사용) 토큰 폐기 즉시 접근을 차단합니다.
+34. **`./apps/worker/src/repositories/{categories,captures,topics,manuscripts,quota,publish,bridge}.repo.ts`** (`Create` — D1 Repository 계층)
+    *   **변경 내용 및 근거:** prepared statement와 `env.DB.batch()` 트랜잭션 캡슐화(원고 수정 + `QUEUED` 브리지 작업 일괄 취소, 할당량 SQL 원자 예약 `UPDATE ... WHERE used + reserved + ? <= daily_cap` 및 정산, `BridgeJob` 조건부 `UPDATE ... WHERE job_id = ? AND status IN ('QUEUED','RESUME_REQUESTED') AND approved_hash = ?` + `meta.changes === 1` 선점, `GROUP BY` `C-Rank`·KST 승인 집계).
+35. **`./apps/worker/src/services/r2-signer.ts`** (`Create` — R2 단기 서명 URL 서비스)
+    *   **변경 내용 및 근거:** 경량 WebCrypto AWS SigV4로 PUT(5분 만료, 객체 키·`Content-Type` `image/webp`|`image/jpeg`·최대 크기 바인딩) 및 GET(10분 만료) 서명 URL을 발급해 이미지 바이트가 Workers CPU/메모리를 통과하지 않게 합니다.
+36. **`./apps/worker/src/services/quota-ledger.ts`** (`Create` — 할당량·D1 보수 상한 서비스)
+    *   **변경 내용 및 근거:** 제공자별 초기화 타임존(Workers·D1 UTC 자정 / Gemini 태평양 시간 자정) 기준일 계산, 단계 시작 시 원자 예약·종료 시 미사용분 정산, 한도 초과 시 유료 전환 없이 차단, `d1_reads`·`d1_writes` 보수 상한(80% 경고·95% 신규 생성 차단) 추적.
+37. **`./apps/worker/src/services/ymyl.ts`** (`Create` — YMYL 2중 판정 서비스)
+    *   **변경 내용 및 근거:** 1차 키워드 즉시 거부 + 2차 LLM 배치 분류기 호출(경계 사례는 `BORDERLINE_PENDING`으로 작성자 확인).
+38. **`./apps/worker/src/services/naver-api.ts`** (`Create` — 네이버 API·Google Trends 어댑터)
+    *   **변경 내용 및 근거:** `blog.json`, `news.json`, `webkr.json`, `/v1/datalab/search`(기준 키워드 포함 5개 배치 + 24시간+ 캐시), 선택형 `/keywordstool`(HMAC-SHA256, 키 미설정 시 우회), Google Trends RSS(429 시 캐시/생략 + 지수 백오프).
+39. **`./apps/worker/src/services/source-snapshot.ts`** (`Create` — 1차 출처 스트리밍 추출 서비스)
+    *   **변경 내용 및 근거:** Workers `HTMLRewriter`로 전체 DOM 파싱 없이 본문 텍스트만 스트리밍 추출해 R2(`snapshots/{topic_id}/{snapshot_id}.txt`)에 저장하고 D1에 SHA-256 해시·문자 수를 기록합니다.
+40. **`./apps/worker/src/services/llm-adapter.ts`** (`Create` — 교체 가능 LLM·도식 이미지 어댑터)
+    *   **변경 내용 및 근거:** Google AI Studio(Gemini 무료 티어) 기본 어댑터를 인터페이스 뒤에 격리해 무료 티어 변경 시 교체 가능하게 하며, `explainer` 한정 AI 도식 최대 1~2장 생성(할당량 0 시 이미지 생략).
+41. **`./apps/worker/src/services/claim-verify.ts`** (`Create` — 주장 대조·HTML 정제 서비스)
+    *   **변경 내용 및 근거:** 요청 2 전용으로 인용구 공백·문장부호 정규화 문자열 대조, 수치·단위 토큰 일치 검사(실패·미근거 시 자동 `[VERIFY]`), Workers `HTMLRewriter` 기반 서버 측 허용 태그·출처 URL 링크 정제를 수행합니다.
+42. **`./apps/worker/src/routes/{me,categories,captures,topics,manuscripts,media,publish,export,bridge}.ts`** (`Create` — Hono API 라우트)
+    *   **변경 내용 및 근거:** 도메인별 엔드포인트 구현(`GET /api/me`, `/api/categories*`, `/api/captures/{presign,,:id/consent}`, `/api/topics/discover/step{1-seeds,2-datalab,3-supply}`, `/api/topics/{from-capture,:id/sources/*}`, `/api/manuscripts/{generate,:id/verify-sanitize,:id,:id/resolve-verify,:id/approve}`, `POST /api/media/download-urls`, `/api/published-posts`, `/api/visitors`, `/api/dashboard/summary`, `POST /api/export`, M2 `/api/bridge/{tokens*,jobs*,poll/*}`). 모든 경로에 `@hono/standard-validator`와 권한 미들웨어 적용.
+43. **`./apps/worker/src/jobs/scheduled.ts`** (`Create` — Cron Trigger 핸들러)
+    *   **변경 내용 및 근거:** 매시 정각 실행: ① 추적 대상 `(post_id, keyword)` 쌍을 배치 상한(외부 호출 50개·CPU 10ms 실측값 중 엄격한 쪽, 초기 보수값 10쌍)만큼 `blog.json`(`display=100`, 일 1회, 30일) 조회 후 `batch()` 저장, ② M2 시간 기반 상태 전이(대기 만료·리스 만료·인증 대기 시간 초과) 일괄 정리.
+44. **`./apps/worker/test/*.test.ts`** (`Create` — Worker 통합 테스트)
+    *   **변경 내용 및 근거:** `auth-uid-403.test.ts`(허용 외 UID 유효 토큰으로 모든 API 전수 `403`), `auth-session.test.ts`(14일 만료·15분 재인증·60초 시계 오차·타 프로젝트 `aud`/`iss`), `manuscript-gate.test.ts`(미해소 `[VERIFY]` 차단·수정 시 승인 해제 + `QUEUED` 취소·`content_type` 조합·LLM 동의), `concurrency-ledger.test.ts`(`run_id` 중복 방지·할당량 원자 예약/정산·D1 보수 상한·`BridgeJob` 조건부 선점·페어링 토큰 폐기 즉시 차단), `scheduled.test.ts`(Cron 순위 추적·만료 정리).
+
+#### E. 프론트엔드 `apps/web/` (Phase 1~4: M1, Phase 5: M2 UI)
+
+45. **`./apps/web/package.json`** & **`./apps/web/vite.config.ts`** (`Create` — 프론트엔드 빌드·프록시 설정)
+    *   **변경 내용 및 근거:** React, Vite, Tailwind CSS v4, `@tanstack/react-query`, `firebase`, `exifr`, `@content-desk/shared` 정의. `build.target: ['es2022', 'safari16.4', 'chrome111', 'firefox128']`, 개발 시 `/api`를 로컬 `wrangler dev`로 프록시.
+46. **`./apps/web/index.html`** (`Create` — 앱 HTML 셸)
+    *   **변경 내용 및 근거:** `viewport-fit=cover`, 한국어 `lang="ko"`, `Pretendard Variable` 동적 서브셋 로드.
+47. **`./apps/web/src/styles/tokens.css`** (`Create` — 디자인 토큰)
+    *   **변경 내용 및 근거:** `:root` 의미 변수 + Tailwind v4 `@theme inline` + `--color-*: initial`로 `DESIGN.md` 기반 중립화 팔레트, 상태 색 체계, 협찬 골드 배지, 16px 기준 스케일, 한글 조판 규칙 정의.
+48. **`./apps/web/src/lib/firebase.ts`** (`Create` — Firebase Auth 초기화)
+    *   **변경 내용 및 근거:** `browserLocalPersistence` 명시, 이메일/비밀번호 로그인(`signInWithEmailAndPassword`), 재인증(`EmailAuthProvider.credential` + `reauthenticateWithCredential` + `getIdToken(true)`), 비밀번호 재설정(`sendPasswordResetEmail`), 로그아웃만 노출(`createUserWithEmailAndPassword` 및 Google 제공자 미포함).
+49. **`./apps/web/src/lib/api-client.ts`** & **`./apps/web/src/lib/query-client.ts`** (`Create` — API·상태 클라이언트)
+    *   **변경 내용 및 근거:** Hono `hc<AppType>` 기반 타입 안전 클라이언트, 요청마다 ID 토큰 첨부, `401 SESSION_EXPIRED` 시 자동 로그아웃·로그인 이동, `401 REAUTH_REQUIRED` 시 재인증 모달 트리거 후 자동 재시도, `503 D1_DAILY_LIMIT_EXCEEDED` 시 UTC 자정 대기 배너 표시.
+50. **`./apps/web/src/platform/exif.ts`** (`Create` — EXIF 어댑터)
+    *   **변경 내용 및 근거:** `readCaptureMeta(file)` 함수로 `exifr`를 격리(`pick: ['DateTimeOriginal', 'OffsetTimeOriginal', 'Orientation']`, `gps: false`, `reviveValues: false`), `OffsetTimeOriginal` 결합 및 누락 시 `+09:00`(KST) 간주.
+51. **`./apps/web/src/platform/image-encode.ts`** & **`./apps/web/src/platform/image.worker.ts`** (`Create` — 24MP 안전 이미지 처리)
+    *   **변경 내용 및 근거:** 원본 업로드 절대 금지(실패 시 오류+카메라 호환성 안내). 메인 스레드 `<img>` `naturalWidth`/`naturalHeight`로 방향 반영 크기 조회 → 긴 변 `2,560px` 목표 `w × h` 계산 → Web Worker `createImageBitmap(..., { imageOrientation: 'from-image', resizeWidth, resizeHeight, resizeQuality: 'high' })` 호출 및 결과 치수 일치 검증(불일치·미지원 시 목표 크기 캔버스 `drawImage` 폴백, 수동 회전 금지) → `blob.type !== 'image/webp'` 시 JPEG(`0.82`) 재인코딩 → 동시 1장 제한·`bitmap.close()`·캔버스 `width=height=0`·`revokeObjectURL` 메모리 회수 → 1장씩 처리·업로드 멱등 루프.
+52. **`./apps/web/src/platform/clipboard.ts`** (`Create` — 서식 복사 모듈)
+    *   **변경 내용 및 근거:** 클릭 핸들러 내 동기 `new ClipboardItem({ 'text/html': Promise<Blob>, 'text/plain': Promise<Blob> })` 생성, 공유 `html-sanitize` 적용, `ClipboardItem` 미지원 시 일반 텍스트 복사 폴백.
+53. **`./apps/web/src/platform/share.ts`** (`Create` — 다중 이미지 내보내기 모듈)
+    *   **변경 내용 및 근거:** 패널 오픈 시 R2 GET 서명 URL로 이미지를 사전 다운로드·JPEG 변환해 `01_캡션.jpg` 순번 `File[]`을 준비해 두고, 클릭 시 즉시 `navigator.canShare({ files })` → `navigator.share({ files })` 호출(미지원 시 일괄 다운로드 / PC PNG 클립보드 복사).
+54. **`./apps/web/src/platform/ngram.worker.ts`** (`Create` — 브라우저 N-gram Web Worker)
+    *   **변경 내용 및 근거:** Workers CPU 10ms 한도를 소비하지 않고 과거 승인 원고·SERP 스니펫 대비 N-gram 유사도를 브라우저에서 계산합니다.
+55. **`./apps/web/src/components/{ReauthModal,StatusBadge,VerifyGate,IsolatedPreview,BottomActionBar}.tsx`** (`Create` — 공용 UI 컴포넌트)
+    *   **변경 내용 및 근거:** 민감 작업 15분 재인증 모달, 색+아이콘+라벨 병행 상태 배지, `[VERIFY]` 해소·출처·유사도·공정위 문구 검증 게이트, 대시보드 CSS를 차단한 원고 미리보기, 안전 영역 하단 고정 액션 바.
+56. **`./apps/web/src/pages/{LoginPage,MobileUploadPage,DashboardPage,CategoriesPage,DiscoveryPage,ManuscriptPage,CopyPanelPage,PublishTrackerPage,SettingsPage}.tsx`** (`Create` — 화면 페이지)
+    *   **변경 내용 및 근거:**
+        *   `LoginPage`: 이메일/비밀번호 단독 로그인(`autocomplete`), 중립 오류 문구, `[비밀번호를 잊으셨나요?]` 재설정 요청 UI(회원가입 UI 부재).
+        *   `MobileUploadPage`: `<input type="file" accept="image/*" multiple>`(최대 20장, `capture` 미사용), 한 장씩 EXIF 제거·업로드 진행률·실패 안내, 메모·협찬·카테고리 선택, 제한적 플로팅 액션 버튼.
+        *   `DashboardPage`: KST 오늘·이번 주 승인 건수, `C-Rank` 분산 경고, 일일 할당량·D1 보수 상한·R2 80% 경고·30일 백업 알림, M2 브리지 상태 표시.
+        *   `CategoriesPage` / `DiscoveryPage`: 비YMYL 카테고리 CRUD, 4단계 분할 발굴 호출(TanStack Query), YMYL 경계 사례 확인, 1차 출처 후보 선택·직접 입력.
+        *   `ManuscriptPage` / `CopyPanelPage`: 무료 LLM 전송 동의, 생성(요청 1)→대조·정제(요청 2) 순차 실행, 검증 게이트·승인(`content_hash`), 승인 전 복사/공유/브리지 버튼 비활성화, 갤럭시 탭 분할 화면 48px 복사·공유 버튼, `네이버 블로그 글쓰기 열기` 바로가기.
+        *   `PublishTrackerPage` / `SettingsPage`: `logNo`·타겟 키워드 등록, 순위 근사치 추이, 일일 방문자 수 입력, 전체 JSON 내보내기(15분 재인증), M2 페어링 토큰 발급/폐기(15분 재인증).
+57. **`./apps/web/test/*.test.ts`** (`Create` — 프론트엔드 단위 테스트)
+    *   **변경 내용 및 근거:** `LoginPage`(회원가입 UI 부재·`autocomplete`·`sendPasswordResetEmail` 중립 안내), `exif.ts`(KST 오프셋 폴백), `ngram.worker`, `IsolatedPreview`(테마 격리), 승인 전 내보내기 버튼 비활성화 검증.
+
+#### F. PC 브리지 `apps/pc-bridge/` (Phase 5 — 마일스톤 2, 게이트 조건부)
+
+> **착수 게이트:** 오너의 네이버 이용약관 검토 완료 승인 및 미결 질문 8(스마트에디터 ONE 자동 임시저장·복구 모달) 실측 완료 전까지 구현·배포하지 않습니다.
+
+58. **`./apps/pc-bridge/package.json`** (`Create` — M2 패키지 매니페스트)
+    *   **변경 내용 및 근거:** Windows Node.js 실행 스크립트 및 `@content-desk/shared` 의존성 정의.
+59. **`./apps/pc-bridge/src/poller.ts`** (`Create` — 상시 폴러)
+    *   **변경 내용 및 근거:** 수신 포트 없이 30초 이상 간격으로 Workers 대기열 조회(`last_seen` 상태 변경 시 또는 5분 간격), Windows 사용자 전용 위치(`%LOCALAPPDATA%\content-desk\token`, DPAPI/사용자 ACL)에서 페어링 토큰 로드, R2 GET 서명 URL로 이미지 임시 다운로드, `RUNNING` 확정 후에만 작업 실행 및 PC 알림 표시, 리스 연장 및 결과(`PublishReceipt`/`AUTH_REQUIRED`/`CAPTCHA_DETECTED`) 보고.
+60. **`./apps/pc-bridge/src/runner.ts`** & **`./apps/pc-bridge/src/scripts/smarteditor-draft.ts`** (`Create` — `ego-browser` 작업 스크립트)
+    *   **변경 내용 및 근거:** 페어링 토큰을 넘기지 않고 원고 JSON·로컬 이미지 절대 경로만 인자로 실행. 복구 모달 감지 시 즉시 `FAILED` 중단, `#mainFrame` 사전 점검·로그인 확인, 게시판 선택, 이미지 마커 구간별 `keyboard.paste({ text, html })` + `page.setInputFiles()`/`waitForFileChooser()` + `phinf.pstatic.net` 대기 반복, 임시저장 클릭(최종 발행 금지), 인증 예외 시 `task.handOff()` 및 재개 시 최상위 `takeOverTaskSpace(id)` 인계, 종료 상태별 `finish({ keep })` 정리(`ego lite` 쿠키·캐시 미삭제).
+61. **`./apps/pc-bridge/test/*.test.ts`** (`Create` — M2 단위 테스트)
+    *   **변경 내용 및 근거:** 폴러 상태 전이·토큰 미전달 격리·구간 분할 실행 순서·복구 모달 즉시 중단 로직 검증.
+
+### 단계별 실행 순서 (Phase 0 ~ Phase 5)
+
+*   **Phase 0 (착수 전 검증·외부 설정):** Firebase Spark 이메일/비밀번호 단독 활성화·단일 계정 생성·가입(create) 비활성화 가능 여부 확인·이메일 열거 보호 확인·비밀번호 재설정 메일 실발송 확인, D1·R2 생성(결제수단·CORS·사용량 알림 확인), 실기기 사전 검증(미결 질문 1~3, 7).
+*   **Phase 1 (M1 기반):** 모노레포·`packages/shared`·`0001_initial.sql`·Worker 인증/세션(`14일`·`15분`·`60초`)·허용 UID `403`·웹 로그인/재인증/비밀번호 재설정 화면.
+*   **Phase 2 (M1 여정 1):** `CategoryProfile` CRUD·YMYL 2중 차단·R2 SigV4 서명 URL·휴대폰 24MP 안전 업로드(`CaptureAsset`, EXIF 제거, LLM 전송 동의).
+*   **Phase 3 (M1 여정 2):** 4단계 분할 글감 발굴·1차 출처 `HTMLRewriter` 스냅샷·할당량 원장(D1 보수 상한 포함)·원고 생성/대조/정제·브라우저 N-gram·검증 게이트/승인.
+*   **Phase 4 (M1 완결):** 갤럭시 탭 수동 복사·다중 공유 패널·발행 URL(`logNo`)·순위 추적 Cron·방문자/C-Rank/전체 내보내기(15분 재인증)·Workers Logs CPU 10ms 실측(미결 질문 9).
+*   **Phase 5 (M2 — 게이트 통과 후):** `0002_bridge.sql`·페어링 토큰(15분 재인증·즉시 폐기)·`BridgeJob` API(작업 등록 15분 재인증)·`apps/pc-bridge` 폴러 및 `ego-browser` 스크립트.
+
+### 검증 계획 (Verification Plan)
+
+*   **빌드 및 타입 체크:** `pnpm typecheck` 및 `pnpm build` (Vite `safari16.4`/`chrome111`/`firefox128` 타깃 빌드, `wrangler deploy --dry-run` 번들 검증 및 금지 의존성 미포함 확인).
+*   **정적 분석 및 린트:** `pnpm lint` (zod 3 금지 문법·`createUserWithEmailAndPassword` 미사용·비밀키 리터럴 미포함 확인).
+*   **단위 테스트 (`pnpm test:unit`):**
+    *   `packages/shared`: `content_hash` 결정성, HTML 정제·XSS 차단, 마커 구간 분할·순번 파일명, 공정위 문구, YMYL 1차 필터, zod 4 스키마.
+    *   `apps/web`: 로그인 `autocomplete`·회원가입 UI 부재, `sendPasswordResetEmail` 중립 안내 문구(성공·미존재 동일), `readCaptureMeta` KST 오프셋 파싱, N-gram 계산, 미리보기 테마 격리, 승인 전 복사·공유 비활성화.
+*   **통합 테스트 (`pnpm test:worker`, `@cloudflare/vitest-pool-workers` + Miniflare D1 `applyD1Migrations`):**
+    *   **가입 경로 차단 전수 검증:** 허용 목록에 없는 UID의 유효 서명 ID 토큰으로 모든 API(특히 `/api/manuscripts/:id/approve`, `/api/captures/presign`, `/api/media/download-urls`, `/api/export`, `/api/bridge/tokens`, `/api/bridge/jobs`) 호출 시 예외 없이 `403 UID_NOT_ALLOWED` 반환.
+    *   **세션·재인증 검증:** `auth_time` 14일 초과 → `401 SESSION_EXPIRED`, 민감 작업(`POST /api/export`, `POST/DELETE /api/bridge/tokens`, `POST /api/bridge/jobs`) `auth_time` 15분 초과 → `401 REAUTH_REQUIRED`, 시계 오차 60초 초과 미래 `iat`/`auth_time`·타 프로젝트 `aud`/`iss` → `401`.
+    *   **검증 게이트·동시성·원장:** 미해소 `[VERIFY]` 승인 거부, 해시 불일치 승인 거부, 수정 시 승인 해제 + `QUEUED` 작업 `batch()` 자동 취소, `run_id` 중복 방지, 할당량 SQL 원자 예약·정산·D1 보수 상한(`503 D1_DAILY_LIMIT_EXCEEDED`), `BridgeJob` 조건부 `UPDATE` 동시 선점 1건 보장, 폐기된 페어링 토큰 즉시 `401` 차단(캐시 지연 없음).
+    *   **Cron `scheduled`:** `fetch` 모킹으로 순위 추적(`blog.json` 100위 내/외, 일 1회, 30일 종료) 및 M2 만료 작업 정리 검증.
+*   **배포 전 보안 점검 체크리스트 (수동 확인 필수):**
+    *   Firebase 콘솔 이메일/비밀번호 단독 활성(Google 등 소셜 비활성), 가입(create) 비활성화 Spark 지원 여부 확인 및 결과 기록, 이메일 열거 보호 활성 확인.
+    *   실제 오너 이메일로 비밀번호 재설정 메일 발송·스팸함 확인·변경·구 비밀번호 거부·신 비밀번호 로그인 및 새 `auth_time` 발급 확인.
+    *   `ALLOWED_UIDS` 등 `vars`와 API/R2 Secret 분리 점검, R2 버킷 CORS(`GET`·`PUT`, 대시보드 출처 한정) 및 사용량 알림 설정 확인.
+*   **실기기·실측 체크리스트 (Phase 0 & Phase 4):**
+    *   아이폰 Safari(실기기 버전 기록): 24MP 사진 업로드, EXIF 방향 1~8 회귀, WebP→JPEG 폴백, R2 객체 GPS EXIF 0건 확인, 16px 입력창 자동 확대 없음, 7일 비활성 후 비밀번호 관리자 재로그인.
+    *   안드로이드 Chrome: 다중 업로드, HEIF 디코딩 실패 시 원본 미업로드 및 안내 확인.
+    *   갤럭시 탭 Chrome 분할 화면: `ClipboardItem` 서식 유지 붙여넣기, 48px 복사 버튼, 사전 변환 JPEG `navigator.share({ files })` 다중 공유, 하단 고정 바 안전 영역.
+    *   Cloudflare Workers Logs 실측: 원고 생성, 대조·정제, 순위 추적 크론 호출별 CPU 시간 10ms 이내 확인(Workers Spectre 완화로 코드 내부 타이머 대신 대시보드/로그 실측).
+
+--------------------------------------------------------------------------------
+
+*Drafted with EGM*

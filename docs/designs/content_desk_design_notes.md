@@ -20,15 +20,17 @@
 
 ## 2. 인증 및 접근 제어
 
-* **Firebase Auth(Spark 무료 플랜)** 본인 인증을 필수로 적용합니다(Cloudflare Access는 사용하지 않음).
-* **단일 사용자 제한:** Firebase Auth는 기본 설정에서 누구나 계정을 만들 수 있으므로, Workers가 모든 요청에서 ID 토큰을 검증(Google 공개키로 RS256 서명, `aud`·`iss`·`exp`·`iat`·`auth_time` 직접 검증)한 뒤 **허용된 UID 목록**에 없는 요청을 거부합니다.
+* **로그인 방식 (Firebase Auth Spark 무료 플랜, 이메일/비밀번호 단독):** 본인 인증은 Firebase Auth **이메일/비밀번호 단독 로그인**으로 적용합니다(Cloudflare Access 미사용). 모바일 팝업 차단·서드파티 저장소 제약(`signInWithRedirect` + `authDomain` 구성 부담)을 피하기 위해 Google 로그인은 1차 범위에서 제외하며, 추후 필요해지면 동일 UID에 계정을 연결(`linkWithPopup`)해 확장할 수 있습니다.
+* **가입 경로 차단 및 단일 사용자 제한:** Firebase Auth는 기본 설정에서 누구나 이메일로 가입할 수 있으므로, 클라이언트에는 회원가입 화면과 가입 API 호출을 구현하지 않으며 배포 전 Firebase 콘솔에서 가입(create) 비활성화 가능 여부(Spark 지원 여부 확인 필요)와 **이메일 열거 보호(email enumeration protection)** 활성화를 점검합니다. **Workers의 허용 UID 검증(`wrangler.toml` `vars` 환경 변수 `ALLOWED_UIDS`)을 유일하고 최종적인 방어선**으로 두어, 모든 요청에서 ID 토큰(Google X.509 공개키 RS256 서명, `aud`·`iss`·`exp`·`iat`·`auth_time`·비어 있지 않은 `sub`)을 검증한 뒤 허용된 UID 목록에 없는 요청은 모든 API(특히 승인·내보내기·브리지 작업 등록)에서 `403 Forbidden`으로 거부합니다.
+* **세션 저장 및 `auth_time` 기준:** 클라이언트는 `browserLocalPersistence`(IndexedDB)를 사용하고 입력창에 `autocomplete="username"` / `"current-password"`를 지정해 비밀번호 관리자 자동 완성을 지원합니다(iOS Safari 7일 비활성 저장소 정리 시 재로그인 부담 완화, 홈 화면 추가 권장). Workers는 `iat`·`auth_time`에 시계 오차 60초를 허용해 미래 시각을 차단하고, 일반 API는 **최대 세션 기간 14일**(`now - auth_time <= 14일`, 초과 시 `401 SESSION_EXPIRED`로 재로그인 강제), 민감 작업(전체 데이터 내보내기 `POST /api/export`, PC 브리지 페어링 토큰 발급·폐기 `POST/DELETE /api/bridge/tokens`, PC 브리지 작업 등록 `POST /api/bridge/jobs`)은 **최근 15분 이내 재인증**(`now - auth_time <= 15분`, 초과 시 `401 REAUTH_REQUIRED` 반환 후 `reauthenticateWithCredential`로 재인증)을 요구합니다.
+* **비밀번호 재설정 흐름:** 1인 전용 계정의 유일한 복구 경로로 `sendPasswordResetEmail` 기반 비밀번호 재설정 흐름을 로그인 화면과 테스트 항목에 포함하며, 이메일 열거 보호에 맞춰 등록 여부와 무관한 중립 안내 문구를 표시합니다.
 * **데이터베이스 접근 경로:** 대시보드는 DB에 직접 접근하지 않고 모든 읽기·쓰기를 Workers를 거쳐 수행합니다. Cloudflare D1은 외부 공개 엔드포인트 없이 Workers 내부 바인딩(`env.DB`)으로만 접근하므로 GCP 서비스 계정 비밀키·JWT 서명·OAuth 토큰 교환이 필요 없습니다.
 
 ## 3. 데이터 저장
 
 * **Cloudflare D1(무료 플랜: 일 읽기 500만 행, 일 쓰기 10만 행, 계정 5 GB·DB당 500 MB, 7일 Time Travel 복구):** `CategoryProfile`, `CaptureAsset`(휴대폰 업로드 사진·메모 묶음), `TopicDiscoveryJSON`, `NaverBlogManuscriptBundle`, `BridgeJob`·`PublishReceipt`, 실행 원장, 할당량 원장, 발행 기록, 일일 방문자 수를 저장합니다. 조회·집계용 핵심 필드만 인덱싱된 SQL 컬럼으로 두고 중첩 페이로드는 JSON `TEXT` 컬럼에 저장하며, 복수 문장은 `batch()`로 묶습니다.
 * **2티어 JSON:** 채널 중립적 리서치·소재 JSON(`TopicDiscoveryJSON`)과 1단계 네이버 출력 스키마(`NaverBlogManuscriptBundle`)를 분리해 저장합니다.
-* **Cloudflare R2(무료 플랜: 월 10 GB 저장·무료 egress):** D1 행당 1 MB·DB당 500 MB 제한이 있으므로 사용자 사진, AI 생성 이미지, 1차 출처 본문 스냅샷 텍스트는 R2에 저장하고, D1에는 파일 경로·URL·해시 메타데이터만 저장합니다. 클라이언트 측 축소·압축(WebP, 미지원 시 JPEG)으로 무료 한도 내에 유지합니다.
+* **Cloudflare R2(무료 플랜: 월 10 GB 저장·무료 egress):** D1 문자열·BLOB·행당 2 MB(2,000,000 바이트)·DB당 500 MB 제한이 있으므로 사용자 사진, AI 생성 이미지, 1차 출처 본문 스냅샷 텍스트는 R2에 저장하고, D1에는 파일 경로·URL·해시 메타데이터만 저장합니다. 클라이언트 측 축소·압축(WebP, 미지원 시 JPEG)으로 무료 한도 내에 유지합니다.
   * 탭에서 이미지를 canvas로 그려 JPEG로 변환하므로, 버킷 CORS에 대시보드 출처의 `GET`·`PUT`을 허용합니다(미설정 시 canvas가 오염되어 내보내기 실패).
   * 이미지는 Workers가 발급한 만료 시간이 짧은 서명 URL로만 내려받습니다. 수동 복사 모드에서는 대시보드가, PC 자동 임시저장에서는 PC 브리지가 이 URL을 사용합니다(브리지는 R2 접근 키를 보관하지 않음).
   * **R2 활성화 조건:** 무료 한도 안에서 사용하더라도 활성화 시 결제수단 등록을 요구할 수 있으므로, 착수 전 확인하고 0원 원칙 유지를 위해 사용량 알림을 설정합니다.
@@ -77,7 +79,7 @@
 * **통신 및 보안 (pull 방식):** PC에서 로컬 포트를 여는 브리지는 같은 PC에서 열린 임의의 웹페이지가 호출할 수 있어, 네이버에 로그인된 브라우저가 외부에서 조작될 위험이 있습니다. 또한 Chrome은 공개 사이트가 로컬 주소로 요청할 때 별도 권한 확인을 요구할 수 있습니다. 따라서 브리지는 **수신 포트를 열지 않고 Workers로 나가는 요청만** 사용합니다.
   * 최초 1회 대시보드에서 발급한 **기기 페어링 토큰**(브리지 전용, 대시보드에서 폐기 가능)으로 Workers에 인증합니다.
   * 브리지는 사용자가 승인한 원고 작업만 가져가며, 작업 ID당 최대 1회만 실행합니다. 실행 도중 멈춰 임시저장 여부를 알 수 없으면 자동 재시도하지 않고 `UNKNOWN`으로 표시하며, 재시도는 항상 새 작업 ID로 등록합니다.
-* **폴링·하트비트 예산:** 폴러는 30초 이상 간격으로 대기열을 조회하고, `last_seen`은 상태가 바뀔 때 또는 5분 간격으로만 기록합니다. D1 무료 한도(일 읽기 500만 행·쓰기 10만 행)에서는 하루 2,880회 폴링이 0.1% 미만이지만, `(status, created_at)` 인덱스로 풀 스캔을 막고 페어링 토큰 해시 확인 결과는 5분간 Workers 메모리에 캐시합니다.
+* **폴링·하트비트 예산:** 폴러는 30초 이상 간격으로 대기열을 조회하고, `last_seen`은 상태가 바뀔 때 또는 5분 간격으로만 기록합니다. D1 무료 한도(일 읽기 500만 행·쓰기 10만 행)에서는 하루 2,880회 폴링이 0.1% 미만이지만, `(status, created_at)` 인덱스로 풀 스캔을 막습니다. 페어링 토큰은 메모리 캐시 없이 매 요청 D1에서 해시와 `revoked_at IS NULL`을 직접 검증해 폐기 시 즉시 차단합니다.
 
 ## 6. 카테고리 레지스트리 (`CategoryProfile`)
 

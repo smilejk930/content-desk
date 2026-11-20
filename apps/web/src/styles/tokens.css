@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  /* DESIGN.md neutralized brand & surface tokens (light-only M1) */
+  --color-brand: #006241;
+  --color-cta: #00754a;
+  --color-band: #1e3932;
+  --color-brand-uplift: #2b5148;
+  --color-brand-tint: #d4e9e2;
+
+  /* Warm neutral editorial surfaces */
+  --color-canvas: #f2f0eb;
+  --color-canvas-muted: #edebe9;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f9f9f9;
+
+  /* Ink */
+  --color-ink: rgba(0, 0, 0, 0.87);
+  --color-ink-soft: rgba(0, 0, 0, 0.58);
+  --color-ink-inverse: #ffffff;
+  --color-ink-inverse-soft: rgba(255, 255, 255, 0.72);
+
+  /* Semantic status & sponsored gold (gold reserved strictly for is_sponsored badge) */
+  --color-status-danger: #c82014;
+  --color-status-danger-bg: hsl(4 82% 43% / 8%);
+  --color-status-warning: #fbbc05;
+  --color-status-warning-ink: rgba(0, 0, 0, 0.87);
+  --color-status-success: #00754a;
+  --color-status-success-bg: #d4e9e2;
+  --color-sponsored-gold: #cba258;
+  --color-sponsored-gold-bg: #faf6ee;
+
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-floating: 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-brand: var(--color-brand);
+  --color-cta: var(--color-cta);
+  --color-band: var(--color-band);
+  --color-brand-uplift: var(--color-brand-uplift);
+  --color-brand-tint: var(--color-brand-tint);
+  --color-canvas: var(--color-canvas);
+  --color-canvas-muted: var(--color-canvas-muted);
+  --color-surface: var(--color-surface);
+  --color-surface-subtle: var(--color-surface-subtle);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-inverse: var(--color-ink-inverse);
+  --color-ink-inverse-soft: var(--color-ink-inverse-soft);
+  --color-danger: var(--color-status-danger);
+  --color-danger-bg: var(--color-status-danger-bg);
+  --color-warning: var(--color-status-warning);
+  --color-warning-ink: var(--color-status-warning-ink);
+  --color-success: var(--color-status-success);
+  --color-success-bg: var(--color-status-success-bg);
+  --color-sponsored: var(--color-sponsored-gold);
+  --color-sponsored-bg: var(--color-sponsored-gold-bg);
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+@layer base {
+  html {
+    font-size: 16px;
+    font-family: var(--font-sans);
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    line-height: 1.65;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+.pill-btn {
+  border-radius: 50px;
+  min-height: 44px;
+  transition: transform 120ms ease, background-color 120ms ease, opacity 120ms ease;
+}
+
+.pill-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.card-surface {
+  background-color: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.safe-bottom-bar {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}

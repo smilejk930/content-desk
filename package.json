@@ -1,0 +1,22 @@
+{
+  "name": "content-desk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.31.0",
+  "scripts": {
+    "dev": "concurrently -n worker,web -c blue,green \"pnpm --filter @content-desk/worker dev\" \"pnpm --filter @content-desk/web dev\"",
+    "build": "pnpm -r --filter \"./packages/*\" --filter \"./apps/*\" build",
+    "typecheck": "pnpm -r --filter \"./packages/*\" --filter \"./apps/*\" typecheck",
+    "lint": "node scripts/lint-policy.mjs",
+    "test:unit": "pnpm --filter @content-desk/shared test && pnpm --filter @content-desk/web test",
+    "test:worker": "pnpm --filter @content-desk/worker test",
+    "test": "pnpm test:unit && pnpm test:worker",
+    "db:migrate:local": "pnpm --filter @content-desk/worker db:migrate:local",
+    "db:migrate:remote": "pnpm --filter @content-desk/worker db:migrate:remote"
+  },
+  "devDependencies": {
+    "concurrently": "catalog:",
+    "typescript": "catalog:"
+  }
+}

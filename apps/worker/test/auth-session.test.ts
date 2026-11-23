@@ -31,14 +31,15 @@ beforeEach(() => {
 });
 
 describe('Firebase Auth 세션·재인증·시계오차·내보내기·D1 오류 검증', () => {
-  it('allows authorized UID on GET /api/me and verifies D1 connectivity', async () => {
+  it('allows authorized admin UID on GET /api/me with role=admin and verifies D1 connectivity', async () => {
     const token = await signFirebaseToken({ keyPair: keyPairA, sub: 'owner-uid-1' });
     const res = await SELF.fetch('https://worker.test/api/me', {
       headers: { Authorization: `Bearer ${token}` }
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { uid: string; d1_connected: boolean };
+    const body = (await res.json()) as { uid: string; role: string; d1_connected: boolean };
     expect(body.uid).toBe('owner-uid-1');
+    expect(body.role).toBe('admin');
     expect(body.d1_connected).toBe(true);
   });
 
@@ -59,6 +60,9 @@ describe('Firebase Auth 세션·재인증·시계오차·내보내기·D1 오류
 
   it.each([
     { method: 'POST', path: '/api/export' },
+    { method: 'GET', path: '/api/admin/users' },
+    { method: 'POST', path: '/api/admin/users' },
+    { method: 'PATCH', path: '/api/admin/users/user-a-001' },
     { method: 'POST', path: '/api/bridge/tokens' },
     { method: 'DELETE', path: '/api/bridge/tokens/tok-1' },
     { method: 'POST', path: '/api/bridge/jobs' }
@@ -73,7 +77,7 @@ describe('Firebase Auth 세션·재인증·시계오차·내보내기·D1 오류
       });
       const res = await SELF.fetch(`https://worker.test${path}`, {
         method,
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       expect(res.status).toBe(401);
       const body = (await res.json()) as { error: { code: string } };
@@ -81,7 +85,7 @@ describe('Firebase Auth 세션·재인증·시계오차·내보내기·D1 오류
     }
   );
 
-  it('exports all 11 durable M1 tables (excluding api_cache) and records last_full_export_at', async () => {
+  it('exports caller-owned 10 per-user tables (with user_meta, excluding global/admin tables) and records last_full_export_at in user_meta', async () => {
     const nowSec = Math.floor(Date.now() / 1000);
     const token = await signFirebaseToken({
       keyPair: keyPairA,
@@ -100,21 +104,25 @@ describe('Firebase Auth 세션·재인증·시계오차·내보내기·D1 오류
     };
     expect(body.schema_version).toBe('1');
     expect(Object.keys(body.data).sort()).toEqual([
-      'app_meta',
       'captures',
       'categories',
       'daily_visitors',
       'execution_runs',
       'manuscripts',
       'published_posts',
-      'quota_ledger',
       'rank_history',
       'source_snapshots',
-      'topics'
+      'topics',
+      'user_meta'
     ]);
     expect(body.data.api_cache).toBeUndefined();
-    const metaEntry = body.data.app_meta?.find((m) => m.key === 'last_full_export_at');
+    expect(body.data.quota_ledger).toBeUndefined();
+    expect(body.data.app_meta).toBeUndefined();
+    expect(body.data.users).toBeUndefined();
+    expect(body.data.usage_daily).toBeUndefined();
+    const metaEntry = body.data.user_meta?.find((m) => m.key === 'last_full_export_at');
     expect(metaEntry?.value).toBe(body.exported_at);
+    expect(metaEntry?.owner_uid).toBe('owner-uid-1');
   });
 
   it('rejects future iat/auth_time beyond 60s skew and wrong aud/iss project', async () => {

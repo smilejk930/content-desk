@@ -17,10 +17,11 @@ crons = ["0 * * * *"]
 
 # 주의: wrangler deploy 실행 시 아래 [vars]가 Cloudflare 대시보드 설정을 덮어씁니다.
 # 첫 배포 시 ALLOWED_ORIGINS에 Pages 프로덕션 출처(예: https://<project>.pages.dev)를 추가하고,
-# 오너 최초 1회 로그인 후 확보한 UID는 대시보드가 아니라 반드시 이 파일의 ALLOWED_UIDS에 넣어 재배포하세요.
+# 관리자(오너) UID는 대시보드가 아니라 반드시 이 파일의 ADMIN_UIDS에 넣어 재배포하세요.
+# 일반 사용자는 관리자 웹 화면(/api/admin/users)에서 D1 users 표로 관리합니다.
 [vars]
 FIREBASE_PROJECT_ID = "content-desk-b9c3d"
-ALLOWED_UIDS = "66bOx7EUvXQupsz9tnFSfFvSlJI2"
+ADMIN_UIDS = "66bOx7EUvXQupsz9tnFSfFvSlJI2"
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://content-desk-f4s.pages.dev"
 R2_ACCOUNT_ID = ""
 R2_BUCKET_NAME = "content-desk-bucket"

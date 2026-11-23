@@ -1,5 +1,6 @@
 # 로컬 개발 전용 비밀키 (실제 값은 .dev.vars에 직접 입력하며 Git 커밋 금지)
-# Phase 1에서는 빈 파일이어도 로컬 인증/D1 테스트가 동작합니다.
+# Phase 1 / Phase 1.5에서는 빈 파일이어도 로컬 인증·다중 사용자·D1 테스트가 동작합니다.
+# 관리자 UID(ADMIN_UIDS)와 허용 출처(ALLOWED_ORIGINS)는 비밀키가 아니므로 wrangler.toml [vars]에서 관리합니다.
 # Phase 2 이후 필요한 비밀키:
 # R2_ACCESS_KEY_ID=
 # R2_SECRET_ACCESS_KEY=

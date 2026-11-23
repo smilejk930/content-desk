@@ -9,4 +9,5 @@ export * from './schemas/capture.js';
 export * from './schemas/topic.js';
 export * from './schemas/manuscript.js';
 export * from './schemas/publish.js';
+export * from './schemas/admin.js';
 export * from './schemas/bridge.js';

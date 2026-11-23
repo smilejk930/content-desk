@@ -1,4 +1,5 @@
 import type { Context } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import type { ApiErrorCode } from '@content-desk/shared';
 import type { WorkerEnv } from '../env.js';
@@ -52,6 +53,18 @@ export function errorHandler(err: Error, c: Context<WorkerEnv>): Response {
         }
       },
       err.status
+    );
+  }
+
+  if (err instanceof HTTPException && err.status === 400) {
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR' as ApiErrorCode,
+          message: '요청 형식이 올바르지 않습니다.'
+        }
+      },
+      400
     );
   }
 

@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { decodeProtectedHeader, importX509, jwtVerify, type CryptoKey } from 'jose';
-import { parseCsvList, parsePositiveInt, type WorkerEnv } from '../env.js';
+import type { UserRole } from '@content-desk/shared';
+import { parseCsvList, parsePositiveInt, type UserScope, type WorkerEnv } from '../env.js';
 import { AppError } from './error-handler.js';
 
 // 운영 바인딩으로 외부 주입할 수 없도록 공식 Google Firebase X.509 인증서 엔드포인트를 고정
@@ -140,21 +141,52 @@ export const firebaseAuth = createMiddleware<WorkerEnv>(async (c, next) => {
     throw new AppError(401, 'SESSION_EXPIRED', '세션이 만료되었습니다. Google 계정으로 다시 로그인해 주세요.');
   }
 
-  // Sole final defense against unauthorized Google sign-ups: fail-closed UID allowlist
-  const allowedUids = parseCsvList(c.env.ALLOWED_UIDS);
-  if (!allowedUids.includes(sub)) {
-    throw new AppError(403, 'UID_NOT_ALLOWED', '접근이 허용되지 않은 계정입니다.', {
-      details: { uid: sub }
-    });
+  // Final defense against unauthorized Google sign-ups:
+  // 1) ADMIN_UIDS passes as role='admin' without requiring a users row.
+  // 2) Otherwise query D1 users table on EVERY request (no memory cache) so blocks take effect immediately.
+  const adminUids = parseCsvList(c.env.ADMIN_UIDS);
+  let role: UserRole;
+
+  if (adminUids.includes(sub)) {
+    role = 'admin';
+  } else {
+    const userRow = await c.env.DB.prepare('SELECT status FROM users WHERE uid = ?')
+      .bind(sub)
+      .first<{ status: string }>();
+
+    if (!userRow) {
+      throw new AppError(
+        403,
+        'USER_NOT_REGISTERED',
+        '등록되지 않은 계정입니다. 관리자에게 아래 UID를 전달해 등록을 요청해 주세요.',
+        {
+          details: { uid: sub }
+        }
+      );
+    }
+
+    if (userRow.status !== 'active') {
+      throw new AppError(
+        403,
+        'USER_BLOCKED',
+        '차단된 계정입니다. 접근이 필요하면 관리자에게 문의해 주세요.'
+      );
+    }
+
+    role = 'user';
   }
+
+  const userScope = { uid: sub } as UserScope;
 
   c.set('auth', {
     uid: sub,
     email: typeof payload.email === 'string' ? payload.email : null,
+    role,
     authTime,
     issuedAt: iat,
     expiresAt: exp
   });
+  c.set('userScope', userScope);
 
   await next();
 });

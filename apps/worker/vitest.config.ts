@@ -14,7 +14,7 @@ export default defineConfig(async () => {
           bindings: {
             TEST_MIGRATIONS: migrations,
             FIREBASE_PROJECT_ID: 'content-desk-b9c3d',
-            ALLOWED_UIDS: 'owner-uid-1',
+            ADMIN_UIDS: 'owner-uid-1',
             ALLOWED_ORIGINS: 'http://localhost:5173',
             SESSION_MAX_AGE_SECONDS: '1209600',
             REAUTH_MAX_AGE_SECONDS: '900',

@@ -1,7 +1,10 @@
 import { z } from '../zod.js';
 
 export const API_ERROR_CODES = [
-  'UID_NOT_ALLOWED',
+  'USER_NOT_REGISTERED',
+  'USER_BLOCKED',
+  'ADMIN_ONLY',
+  'USER_ALREADY_EXISTS',
   'TOKEN_INVALID',
   'SESSION_EXPIRED',
   'REAUTH_REQUIRED',

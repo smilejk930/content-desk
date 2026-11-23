@@ -1,5 +1,14 @@
 import { hc } from 'hono/client';
-import type { ApiErrorCode, ApiErrorPayload } from '@content-desk/shared';
+import type {
+  AdminUserMutationResponse,
+  AdminUsersListResponse,
+  ApiErrorCode,
+  ApiErrorPayload,
+  CreateAdminUserRequest,
+  ExportResponse,
+  MeResponse,
+  UpdateAdminUserRequest
+} from '@content-desk/shared';
 import type { AppType } from '@content-desk/worker/app-type';
 import { getCurrentIdToken, signOutUser } from './firebase';
 
@@ -28,6 +37,7 @@ export interface ApiClientHooks {
   onSessionExpired?: (message: string) => void;
   onReauthRequired?: () => Promise<boolean>;
   onD1LimitExceeded?: (resetAt?: string) => void;
+  onAccessDenied?: (code: 'USER_NOT_REGISTERED' | 'USER_BLOCKED', uid?: string) => void;
 }
 
 let hooks: ApiClientHooks = {};
@@ -55,7 +65,7 @@ async function authenticatedFetch(
   init?: RequestInit,
   retriedAfterReauth = false
 ): Promise<Response> {
-  const token = await getCurrentIdToken(false);
+  const token = await getCurrentIdToken(retriedAfterReauth);
   const headers = new Headers(init?.headers);
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
@@ -84,6 +94,13 @@ async function authenticatedFetch(
     return res;
   }
 
+  if (res.status === 403 && (code === 'USER_NOT_REGISTERED' || code === 'USER_BLOCKED')) {
+    const uid =
+      typeof payload?.error.details?.uid === 'string' ? payload.error.details.uid : undefined;
+    hooks.onAccessDenied?.(code, uid);
+    return res;
+  }
+
   if (res.status === 503 && code === 'D1_DAILY_LIMIT_EXCEEDED') {
     hooks.onD1LimitExceeded?.(payload?.error.reset_at);
   }
@@ -107,4 +124,57 @@ export async function unwrapJson<T>(res: Response): Promise<T> {
     });
   }
   throw new ApiRequestError(res.status, 'INTERNAL_ERROR', `요청 실패 (HTTP ${res.status})`);
+}
+
+export function getApiErrorMessage(err: unknown, fallback = '요청 처리 중 오류가 발생했습니다.'): string {
+  if (err instanceof ApiRequestError) {
+    switch (err.code) {
+      case 'USER_NOT_REGISTERED':
+        return '등록되지 않은 계정입니다. 관리자에게 UID를 전달해 등록을 요청해 주세요.';
+      case 'USER_BLOCKED':
+        return '차단된 계정입니다. 관리자에게 문의해 주세요.';
+      case 'ADMIN_ONLY':
+        return '관리자만 접근할 수 있는 기능입니다.';
+      case 'USER_ALREADY_EXISTS':
+        return '이미 등록되었거나 관리자 목록에 포함된 UID입니다.';
+      case 'REAUTH_REQUIRED':
+        return '최근 15분 이내 Google 재인증이 필요합니다.';
+      default:
+        return err.message || fallback;
+    }
+  }
+  return err instanceof Error ? err.message : fallback;
+}
+
+export async function fetchMe(): Promise<MeResponse> {
+  const res = await apiClient.api.me.$get();
+  return unwrapJson<MeResponse>(res);
+}
+
+export async function triggerExport(): Promise<ExportResponse> {
+  const res = await apiClient.api.export.$post();
+  return unwrapJson<ExportResponse>(res);
+}
+
+export async function fetchAdminUsers(): Promise<AdminUsersListResponse> {
+  const res = await apiClient.api.admin.users.$get();
+  return unwrapJson<AdminUsersListResponse>(res);
+}
+
+export async function createAdminUser(
+  input: CreateAdminUserRequest
+): Promise<AdminUserMutationResponse> {
+  const res = await apiClient.api.admin.users.$post({ json: input });
+  return unwrapJson<AdminUserMutationResponse>(res);
+}
+
+export async function updateAdminUser(
+  uid: string,
+  input: UpdateAdminUserRequest
+): Promise<AdminUserMutationResponse> {
+  const res = await apiClient.api.admin.users[':uid'].$patch({
+    param: { uid },
+    json: input
+  });
+  return unwrapJson<AdminUserMutationResponse>(res);
 }

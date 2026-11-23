@@ -1,4 +1,5 @@
 import { z } from '../zod.js';
+import { userRoleSchema } from './admin.js';
 
 export const registerPublishedPostSchema = z.strictObject({
   manuscript_id: z.string().min(1).max(64),
@@ -16,6 +17,7 @@ export const dailyVisitorRequestSchema = z.strictObject({
 export const meResponseSchema = z.strictObject({
   uid: z.string().min(1),
   email: z.email().nullable(),
+  role: userRoleSchema,
   auth_time: z.number().int().positive(),
   session_expires_at: z.iso.datetime(),
   reauth_valid_until: z.iso.datetime(),
@@ -32,11 +34,10 @@ export const exportResponseSchema = z.strictObject({
     source_snapshots: z.array(z.record(z.string(), z.unknown())),
     manuscripts: z.array(z.record(z.string(), z.unknown())),
     execution_runs: z.array(z.record(z.string(), z.unknown())),
-    quota_ledger: z.array(z.record(z.string(), z.unknown())),
     published_posts: z.array(z.record(z.string(), z.unknown())),
     rank_history: z.array(z.record(z.string(), z.unknown())),
     daily_visitors: z.array(z.record(z.string(), z.unknown())),
-    app_meta: z.array(z.record(z.string(), z.unknown()))
+    user_meta: z.array(z.record(z.string(), z.unknown()))
   })
 });
 

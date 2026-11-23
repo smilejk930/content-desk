@@ -1,8 +1,22 @@
 import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
+import type { UserRole } from '@content-desk/shared';
+
+declare const USER_SCOPE_BRAND: unique symbol;
+
+/**
+ * 요청자 소유 범위 토큰.
+ * 인증 미들웨어(firebase-auth.ts 등)에서만 생성해 컨텍스트에 주입하며,
+ * 모든 사용자 데이터 리포지토리는 첫 인자로 이 타입을 필수로 받습니다.
+ */
+export interface UserScope {
+  readonly uid: string;
+  readonly [USER_SCOPE_BRAND]: true;
+}
 
 export interface AuthContext {
   uid: string;
   email: string | null;
+  role: UserRole;
   authTime: number;
   issuedAt: number;
   expiresAt: number;
@@ -12,7 +26,7 @@ export interface WorkerBindings {
   DB: D1Database;
   MEDIA_BUCKET: R2Bucket;
   FIREBASE_PROJECT_ID: string;
-  ALLOWED_UIDS: string;
+  ADMIN_UIDS: string;
   ALLOWED_ORIGINS: string;
   R2_ACCOUNT_ID: string;
   R2_BUCKET_NAME: string;
@@ -23,6 +37,7 @@ export interface WorkerBindings {
 
 export interface WorkerVariables {
   auth: AuthContext;
+  userScope: UserScope;
 }
 
 export interface WorkerEnv {

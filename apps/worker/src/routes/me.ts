@@ -18,6 +18,7 @@ export const meRoute = new Hono<WorkerEnv>().get('/', firebaseAuth, async (c) =>
   return c.json({
     uid: auth.uid,
     email: auth.email,
+    role: auth.role,
     auth_time: auth.authTime,
     session_expires_at: new Date((auth.authTime + sessionMaxAgeSec) * 1000).toISOString(),
     reauth_valid_until: new Date((auth.authTime + reauthMaxAgeSec) * 1000).toISOString(),

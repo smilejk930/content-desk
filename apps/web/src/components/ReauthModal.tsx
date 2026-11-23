@@ -52,8 +52,8 @@ export function ReauthModal({
           민감 작업 전 Google 재인증
         </h2>
         <p className="mt-2 text-sm text-ink-soft">
-          전체 데이터 내보내기나 브리지 관리 작업은 최근 15분 이내 인증이 필요합니다. 아래 버튼을
-          눌러 본인 Google 계정으로 다시 인증해 주세요.
+          전체 데이터 내보내기, 관리자 사용자 관리, 브리지 관리 작업은 최근 15분 이내 인증이
+          필요합니다. 아래 버튼을 눌러 본인 Google 계정으로 다시 인증해 주세요.
         </p>
 
         {standalone && (

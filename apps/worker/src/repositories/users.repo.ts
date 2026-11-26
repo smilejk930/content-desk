@@ -1,17 +1,22 @@
 import type { D1Database } from '@cloudflare/workers-types';
-import type {
-  AdminUserItem,
-  AdminUsersListResponse,
-  AdminUserTodayUsage,
-  UserStatus
+import {
+  getPacificDateString,
+  getProviderWindowDate,
+  getUtcDateString,
+  type AdminUserItem,
+  type AdminUsersListResponse,
+  type AdminUserTodayUsage,
+  type UserStatus
 } from '@content-desk/shared';
 
 /**
  * usage_daily.window_date 기준 통일:
- * - quota_ledger의 제공자별 기준 시간대(gemini* 계열은 America/Los_Angeles 날짜, 그 외 제공자는 UTC 날짜, YYYY-MM-DD)로
- *   기록·조회하며 Phase 3 quota-ledger.ts 정산 batch()도 동일 기준을 따릅니다.
+ * - packages/shared의 공용 제공자→초기화 시간대 매핑 표(QUOTA_PROVIDER_CONFIGS)를
+ *   users.repo.ts와 quota-ledger.ts가 함께 사용합니다(하드코딩된 LIKE 'gemini%' 제거).
  * - 이 리포지토리는 users와 usage_daily만 다루며 사용자 내용물 표에는 접근하지 않습니다.
  */
+
+export { getPacificDateString, getUtcDateString };
 
 interface UserRow {
   uid: string;
@@ -26,37 +31,21 @@ interface UserRow {
 interface UsageDailyRow {
   owner_uid: string;
   provider: string;
+  window_date: string;
   calls: number;
 }
 
 export interface UsageWindowDates {
   utcDate: string;
   pacificDate: string;
-}
-
-const PACIFIC_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'America/Los_Angeles',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit'
-});
-
-export function getUtcDateString(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
-
-export function getPacificDateString(now = new Date()): string {
-  const parts = PACIFIC_DATE_FORMATTER.formatToParts(now);
-  const year = parts.find((p) => p.type === 'year')?.value ?? '';
-  const month = parts.find((p) => p.type === 'month')?.value ?? '';
-  const day = parts.find((p) => p.type === 'day')?.value ?? '';
-  return `${year}-${month}-${day}`;
+  referenceDate: Date;
 }
 
 export function getUsageWindowDates(now = new Date()): UsageWindowDates {
   return {
     utcDate: getUtcDateString(now),
-    pacificDate: getPacificDateString(now)
+    pacificDate: getPacificDateString(now),
+    referenceDate: now
   };
 }
 
@@ -81,22 +70,33 @@ function toAdminUserItem(row: UserRow, usage: AdminUserTodayUsage): AdminUserIte
   };
 }
 
+function matchesProviderWindow(
+  provider: string,
+  rowWindowDate: string,
+  windows: UsageWindowDates
+): boolean {
+  const expectedDate = getProviderWindowDate(provider, windows.referenceDate);
+  return rowWindowDate === expectedDate;
+}
+
 async function getUsageMapForWindows(
   db: D1Database,
   windows: UsageWindowDates
 ): Promise<Map<string, AdminUserTodayUsage>> {
   const usageResult = await db
     .prepare(
-      `SELECT owner_uid, provider, calls
+      `SELECT owner_uid, provider, window_date, calls
        FROM usage_daily
-       WHERE (provider LIKE 'gemini%' AND window_date = ?)
-          OR (provider NOT LIKE 'gemini%' AND window_date = ?)`
+       WHERE window_date IN (?, ?)`
     )
-    .bind(windows.pacificDate, windows.utcDate)
+    .bind(windows.utcDate, windows.pacificDate)
     .all<UsageDailyRow>();
 
   const map = new Map<string, AdminUserTodayUsage>();
   for (const row of usageResult.results ?? []) {
+    if (!matchesProviderWindow(row.provider, row.window_date, windows)) {
+      continue;
+    }
     const existing = map.get(row.owner_uid) ?? emptyUsage(windows.utcDate);
     existing.byProvider[row.provider] = (existing.byProvider[row.provider] ?? 0) + row.calls;
     existing.totalCalls += row.calls;
@@ -112,19 +112,19 @@ async function getUsageForUserInWindows(
 ): Promise<AdminUserTodayUsage> {
   const result = await db
     .prepare(
-      `SELECT provider, calls
+      `SELECT provider, window_date, calls
        FROM usage_daily
        WHERE owner_uid = ?
-         AND (
-           (provider LIKE 'gemini%' AND window_date = ?)
-           OR (provider NOT LIKE 'gemini%' AND window_date = ?)
-         )`
+         AND window_date IN (?, ?)`
     )
-    .bind(ownerUid, windows.pacificDate, windows.utcDate)
-    .all<{ provider: string; calls: number }>();
+    .bind(ownerUid, windows.utcDate, windows.pacificDate)
+    .all<{ provider: string; window_date: string; calls: number }>();
 
   const usage = emptyUsage(windows.utcDate);
   for (const row of result.results ?? []) {
+    if (!matchesProviderWindow(row.provider, row.window_date, windows)) {
+      continue;
+    }
     usage.byProvider[row.provider] = (usage.byProvider[row.provider] ?? 0) + row.calls;
     usage.totalCalls += row.calls;
   }

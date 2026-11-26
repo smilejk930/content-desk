@@ -13,6 +13,7 @@ import {
   type Visibility
 } from '@content-desk/shared';
 import {
+  ApiRequestError,
   createCategory,
   deleteCategory,
   fetchCategories,
@@ -103,6 +104,12 @@ export function CategoriesPage({
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
     null
   );
+  const [borderlinePending, setBorderlinePending] = useState<{
+    mode: 'create' | 'update';
+    id?: string;
+    payload: CreateCategoryRequest;
+    reason: string;
+  } | null>(null);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
@@ -113,6 +120,7 @@ export function CategoriesPage({
   const createMutation = useMutation({
     mutationFn: (payload: CreateCategoryRequest) => addCategory(payload),
     onSuccess: (res) => {
+      setBorderlinePending(null);
       setForm(createInitialFormState());
       setFeedback({
         tone: 'success',
@@ -120,7 +128,17 @@ export function CategoriesPage({
       });
       void queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
-    onError: (err) => {
+    onError: (err, payload) => {
+      if (err instanceof ApiRequestError && err.code === 'YMYL_BORDERLINE_CONFIRM_REQUIRED') {
+        setBorderlinePending({
+          mode: 'create',
+          payload,
+          reason: err.message
+        });
+        setFeedback(null);
+        return;
+      }
+      setBorderlinePending(null);
       setFeedback({
         tone: 'danger',
         text: getApiErrorMessage(err, '카테고리 생성에 실패했습니다.')
@@ -132,6 +150,7 @@ export function CategoriesPage({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateCategoryRequest }) =>
       editCategory(id, payload),
     onSuccess: (res) => {
+      setBorderlinePending(null);
       setEditingId(null);
       setForm(createInitialFormState());
       setFeedback({
@@ -140,7 +159,18 @@ export function CategoriesPage({
       });
       void queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
-    onError: (err) => {
+    onError: (err, variables) => {
+      if (err instanceof ApiRequestError && err.code === 'YMYL_BORDERLINE_CONFIRM_REQUIRED') {
+        setBorderlinePending({
+          mode: 'update',
+          id: variables.id,
+          payload: variables.payload as CreateCategoryRequest,
+          reason: err.message
+        });
+        setFeedback(null);
+        return;
+      }
+      setBorderlinePending(null);
       setFeedback({
         tone: 'danger',
         text: getApiErrorMessage(err, '카테고리 수정에 실패했습니다.')
@@ -444,6 +474,51 @@ export function CategoriesPage({
             </label>
           </div>
         </form>
+
+        {borderlinePending && (
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-warning bg-canvas p-4 text-sm text-ink"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge tone="warning" icon="!" label="YMYL 경계 사례 확인 필요 (409)" />
+            </div>
+            <p className="mt-2 text-sm text-ink">{borderlinePending.reason}</p>
+            <p className="mt-1 text-xs text-ink-soft">
+              비YMYL 주제(일반 IT·취미·여행·리뷰 등)임을 직접 확인한 경우에만 아래 버튼으로 저장을
+              진행해 주세요.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => {
+                  if (borderlinePending.mode === 'update' && borderlinePending.id) {
+                    updateMutation.mutate({
+                      id: borderlinePending.id,
+                      payload: { ...borderlinePending.payload, confirm_borderline: true }
+                    });
+                  } else {
+                    createMutation.mutate({
+                      ...borderlinePending.payload,
+                      confirm_borderline: true
+                    });
+                  }
+                }}
+                className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse disabled:opacity-60"
+              >
+                경계 사례 확인 후 저장
+              </button>
+              <button
+                type="button"
+                onClick={() => setBorderlinePending(null)}
+                className="pill-btn border border-ink/20 bg-surface px-4 text-sm font-medium text-ink"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        )}
 
         {feedback && (
           <p

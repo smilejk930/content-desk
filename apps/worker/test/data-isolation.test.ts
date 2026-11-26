@@ -97,6 +97,20 @@ beforeEach(async () => {
         headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' }
       });
     }
+    if (url.includes('generativelanguage.googleapis.com')) {
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: JSON.stringify({ verdict: 'SAFE', reason: '비YMYL 주제' }) }]
+              }
+            }
+          ]
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+    }
     throw new Error(`Unexpected external fetch: ${url}`);
   });
 });
@@ -399,5 +413,84 @@ describe('사람별 데이터 격리 (사용자 A / 사용자 B / 관리자 및 
     expect(verifyA.status).toBe(200);
     const verifiedBody = (await verifyA.json()) as { capture: { llm_consent_at: string | null } };
     expect(verifiedBody.capture.llm_consent_at).toBeNull();
+  });
+
+  it('isolates Phase 3 topics, source snapshots, and manuscripts APIs from both other users and admin (404 NOT_FOUND + 0 list rows)', async () => {
+    const nowIso = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-a-001', '사용자 A', nowIso, nowIso, nowIso),
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-b-002', '사용자 B', nowIso, nowIso, nowIso)
+    ]);
+
+    await seedOwnerDataset('user-a-001', 'ua', nowIso);
+
+    const tokenB = await signFirebaseToken({ keyPair, sub: 'user-b-002' });
+    const tokenAdmin = await signFirebaseToken({ keyPair, sub: 'owner-uid-1' });
+
+    for (const otherToken of [tokenB, tokenAdmin]) {
+      // List APIs return 0 rows
+      const topicList = await SELF.fetch('https://worker.test/api/topics', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(topicList.status).toBe(200);
+      expect(((await topicList.json()) as { topics: unknown[] }).topics).toHaveLength(0);
+
+      const msList = await SELF.fetch('https://worker.test/api/manuscripts', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(msList.status).toBe(200);
+      expect(((await msList.json()) as { manuscripts: unknown[] }).manuscripts).toHaveLength(0);
+
+      // Targeted Phase 3 endpoints on User A's resources MUST return 404 NOT_FOUND
+      const targets: Array<{ method: string; path: string; body?: Record<string, unknown> }> = [
+        { method: 'GET', path: '/api/topics/ua-topic' },
+        { method: 'POST', path: '/api/topics/ua-topic/ymyl-confirm', body: { confirmed: true } },
+        { method: 'GET', path: '/api/topics/ua-topic/sources/candidates' },
+        {
+          method: 'POST',
+          path: '/api/topics/ua-topic/sources/snapshot',
+          body: { url: 'https://www.msit.go.kr/press/1', ingest_channel: 'manual_input' }
+        },
+        { method: 'POST', path: '/api/topics/from-capture', body: { capture_id: 'ua-cap' } },
+        {
+          method: 'POST',
+          path: '/api/topics/discover/step1-seeds',
+          body: { category_id: 'ua-cat', content_type: 'explainer' }
+        },
+        { method: 'POST', path: '/api/manuscripts/generate', body: { topic_id: 'ua-topic' } },
+        { method: 'POST', path: '/api/manuscripts/ua-ms/verify-sanitize' },
+        { method: 'GET', path: '/api/manuscripts/ua-ms' },
+        { method: 'PATCH', path: '/api/manuscripts/ua-ms', body: { selected_title: '탈취' } },
+        {
+          method: 'POST',
+          path: '/api/manuscripts/ua-ms/resolve-verify',
+          body: { claim_id: 'c1', action: 'remove_claim' }
+        },
+        {
+          method: 'POST',
+          path: '/api/manuscripts/ua-ms/approve',
+          body: { content_hash: 'a'.repeat(64) }
+        }
+      ];
+
+      for (const t of targets) {
+        const res = await SELF.fetch(`https://worker.test${t.path}`, {
+          method: t.method,
+          headers: {
+            Authorization: `Bearer ${otherToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: t.body ? JSON.stringify(t.body) : undefined
+        });
+        expect(res.status).toBe(404);
+        expect(((await res.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+      }
+    }
   });
 });

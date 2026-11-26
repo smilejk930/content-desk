@@ -73,10 +73,13 @@ export const categoriesRoute = new Hono<WorkerEnv>()
       const scope = c.get('userScope');
       const body = c.req.valid('json');
 
-      // Phase 2: 1차 키워드 차단만 수행합니다(GEMINI_API_KEY가 환경에 있어도 2차 Gemini 호출 비활성화).
-      // 2차 LLM 분류 및 BORDERLINE_PENDING 확인 플로우(409/422 + 확인 플래그)는
-      // Phase 3에서 quota_ledger·usage_daily와 함께 활성화합니다.
-      await assertNonYmylOrThrow(collectCategoryYmylTexts(body));
+      // Phase 3: 1차 키워드 차단 + 2차 Gemini 판정(quota_ledger·usage_daily 연동, 409 경계 확인, 키/한도 불가 시 차단)
+      await assertNonYmylOrThrow(collectCategoryYmylTexts(body), {
+        db: c.env.DB,
+        ownerUid: scope.uid,
+        geminiApiKey: c.env.GEMINI_API_KEY,
+        confirmBorderline: body.confirm_borderline
+      });
 
       const nowIso = new Date().toISOString();
       const profile: CategoryProfile = {
@@ -148,10 +151,13 @@ export const categoriesRoute = new Hono<WorkerEnv>()
         throwValidationError(validated.error.issues);
       }
 
-      // Phase 2: 1차 키워드 차단만 수행합니다(GEMINI_API_KEY가 환경에 있어도 2차 Gemini 호출 비활성화).
-      // 2차 LLM 분류 및 BORDERLINE_PENDING 확인 플로우(409/422 + 확인 플래그)는
-      // Phase 3에서 quota_ledger·usage_daily와 함께 활성화합니다.
-      await assertNonYmylOrThrow(collectCategoryYmylTexts(validated.data));
+      // Phase 3: 1차 키워드 차단 + 2차 Gemini 판정(quota_ledger·usage_daily 연동, 409 경계 확인, 키/한도 불가 시 차단)
+      await assertNonYmylOrThrow(collectCategoryYmylTexts(validated.data), {
+        db: c.env.DB,
+        ownerUid: scope.uid,
+        geminiApiKey: c.env.GEMINI_API_KEY,
+        confirmBorderline: body.confirm_borderline
+      });
 
       try {
         const updated = await updateCategory(scope, c.env.DB, validated.data);

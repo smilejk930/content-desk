@@ -20,6 +20,9 @@ export default defineConfig(async () => {
             R2_BUCKET_NAME: 'content-desk-bucket',
             R2_ACCESS_KEY_ID: 'test-r2-access-key-id',
             R2_SECRET_ACCESS_KEY: 'test-r2-secret-access-key',
+            GEMINI_API_KEY: 'test-gemini-api-key',
+            NAVER_CLIENT_ID: 'test-naver-client-id',
+            NAVER_CLIENT_SECRET: 'test-naver-client-secret',
             SESSION_MAX_AGE_SECONDS: '1209600',
             REAUTH_MAX_AGE_SECONDS: '900',
             CLOCK_SKEW_SECONDS: '60'

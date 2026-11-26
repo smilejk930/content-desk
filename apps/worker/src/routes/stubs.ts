@@ -9,7 +9,6 @@ const notImplemented = (phase: string) => () => {
 };
 
 export const protectedStubsRoute = new Hono<WorkerEnv>()
-  .post('/manuscripts/:id/approve', firebaseAuth, notImplemented('Phase 3'))
   .post('/media/download-urls', firebaseAuth, notImplemented('Phase 4'))
   .post('/bridge/tokens', firebaseAuth, requireRecentAuth, notImplemented('Phase 5 (M2)'))
   .delete('/bridge/tokens/:id', firebaseAuth, requireRecentAuth, notImplemented('Phase 5 (M2)'))

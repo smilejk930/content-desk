@@ -4,6 +4,7 @@ import type {
   AdminUsersListResponse,
   ApiErrorCode,
   ApiErrorPayload,
+  ApproveManuscriptRequest,
   CapturePresignRequest,
   CapturePresignResponse,
   CaptureResponse,
@@ -14,12 +15,32 @@ import type {
   CreateAdminUserRequest,
   CreateCaptureRequest,
   CreateCategoryRequest,
+  CreateSourceSnapshotRequest,
+  CreateSourceSnapshotResponse,
   DeleteCategoryResponse,
+  DiscoverStep1Request,
+  DiscoverStep1Response,
+  DiscoverStep2Request,
+  DiscoverStep2Response,
+  DiscoverStep3Request,
+  DiscoverStep3Response,
   ExportResponse,
+  GenerateManuscriptRequest,
   LlmConsentRequest,
+  ManuscriptDetailResponse,
+  ManuscriptResponse,
+  ManuscriptsListResponse,
   MeResponse,
+  ResolveVerifyRequest,
+  TopicFromCaptureRequest,
+  TopicResponse,
+  TopicsListResponse,
+  TopicSourceCandidatesResponse,
+  TopicYmylConfirmRequest,
   UpdateAdminUserRequest,
-  UpdateCategoryRequest
+  UpdateCategoryRequest,
+  UpdateManuscriptRequest,
+  VerifySanitizeResponse
 } from '@content-desk/shared';
 import type { AppType } from '@content-desk/worker/app-type';
 import { getCurrentIdToken, signOutUser } from './firebase';
@@ -156,6 +177,29 @@ export function getApiErrorMessage(err: unknown, fallback = '요청 처리 중 �
           err.message ||
           '의료·건강·금융·투자·법률 등 YMYL 금지 주제는 정책상 등록할 수 없습니다.'
         );
+      case 'YMYL_BORDERLINE_CONFIRM_REQUIRED':
+        return err.message || 'YMYL 경계 사례입니다. 비YMYL 주제임을 확인한 뒤 재시도해 주세요.';
+      case 'YMYL_SECONDARY_UNAVAILABLE':
+        return (
+          err.message ||
+          'YMYL 2차 AI 검사를 수행할 수 없어(API 키 미설정 또는 응답 오류) 통과가 차단되었습니다.'
+        );
+      case 'SOURCE_DOMAIN_CONFIRM_REQUIRED':
+        return err.message || '허용 목록 외 도메인입니다. 공식 출처 여부를 확인한 뒤 저장해 주세요.';
+      case 'SSRF_BLOCKED':
+        return err.message || '내부 주소 또는 허용되지 않은 URL은 수집할 수 없습니다.';
+      case 'ROBOTS_DISALLOWED':
+        return err.message || '대상 사이트의 robots.txt 정책에 따라 수집이 차단되었습니다.';
+      case 'QUOTA_EXCEEDED':
+        return err.message || '전체 사용자 공유 일일 할당량이 소진되었습니다.';
+      case 'VERIFY_REQUIRED':
+        return err.message || '원고 대조·정제(verify-sanitize) 단계를 먼저 완료해야 승인할 수 있습니다.';
+      case 'VERIFY_UNRESOLVED':
+        return err.message || '미해소 [VERIFY] 항목이 남아 있어 승인할 수 없습니다.';
+      case 'HASH_MISMATCH':
+        return err.message || '원고가 수정되어 승인 해시가 일치하지 않습니다. 다시 검토해 주세요.';
+      case 'LLM_CONSENT_REQUIRED':
+        return err.message || '무료 LLM 제공자 전송 동의가 필요합니다.';
       default:
         return err.message || fallback;
     }
@@ -261,6 +305,146 @@ export async function consentCaptureLlm(
   return unwrapJson<CaptureResponse>(res);
 }
 
+// Phase 3: Topics API
+export async function fetchTopics(params?: {
+  categoryId?: string;
+  runId?: string;
+  status?: string;
+}): Promise<TopicsListResponse> {
+  const query: Record<string, string> = {};
+  if (params?.categoryId) query.category_id = params.categoryId;
+  if (params?.runId) query.run_id = params.runId;
+  if (params?.status) query.status = params.status;
+  const res = await apiClient.api.topics.$get({ query });
+  return unwrapJson<TopicsListResponse>(res);
+}
+
+export async function fetchTopic(id: string): Promise<TopicResponse> {
+  const res = await apiClient.api.topics[':id'].$get({ param: { id } });
+  return unwrapJson<TopicResponse>(res);
+}
+
+export async function discoverStep1Seeds(
+  input: DiscoverStep1Request
+): Promise<DiscoverStep1Response> {
+  const res = await apiClient.api.topics.discover['step1-seeds'].$post({ json: input });
+  return unwrapJson<DiscoverStep1Response>(res);
+}
+
+export async function discoverStep2Datalab(
+  input: DiscoverStep2Request
+): Promise<DiscoverStep2Response> {
+  const res = await apiClient.api.topics.discover['step2-datalab'].$post({ json: input });
+  return unwrapJson<DiscoverStep2Response>(res);
+}
+
+export async function discoverStep3Supply(
+  input: DiscoverStep3Request
+): Promise<DiscoverStep3Response> {
+  const res = await apiClient.api.topics.discover['step3-supply'].$post({ json: input });
+  return unwrapJson<DiscoverStep3Response>(res);
+}
+
+export async function createTopicFromCapture(
+  input: TopicFromCaptureRequest
+): Promise<TopicResponse> {
+  const res = await apiClient.api.topics['from-capture'].$post({ json: input });
+  return unwrapJson<TopicResponse>(res);
+}
+
+export async function confirmTopicYmyl(
+  id: string,
+  input: TopicYmylConfirmRequest
+): Promise<TopicResponse> {
+  const res = await apiClient.api.topics[':id']['ymyl-confirm'].$post({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<TopicResponse>(res);
+}
+
+export async function fetchTopicSourceCandidates(
+  id: string
+): Promise<TopicSourceCandidatesResponse> {
+  const res = await apiClient.api.topics[':id'].sources.candidates.$get({
+    param: { id }
+  });
+  return unwrapJson<TopicSourceCandidatesResponse>(res);
+}
+
+export async function createTopicSourceSnapshot(
+  id: string,
+  input: CreateSourceSnapshotRequest
+): Promise<CreateSourceSnapshotResponse> {
+  const res = await apiClient.api.topics[':id'].sources.snapshot.$post({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<CreateSourceSnapshotResponse>(res);
+}
+
+// Phase 3: Manuscripts API
+export async function fetchManuscripts(categoryId?: string): Promise<ManuscriptsListResponse> {
+  const res = await apiClient.api.manuscripts.$get({
+    query: categoryId ? { category_id: categoryId } : {}
+  });
+  return unwrapJson<ManuscriptsListResponse>(res);
+}
+
+export async function generateManuscript(
+  input: GenerateManuscriptRequest
+): Promise<ManuscriptResponse> {
+  const res = await apiClient.api.manuscripts.generate.$post({ json: input });
+  return unwrapJson<ManuscriptResponse>(res);
+}
+
+export async function verifySanitizeManuscript(id: string): Promise<VerifySanitizeResponse> {
+  const res = await apiClient.api.manuscripts[':id']['verify-sanitize'].$post({
+    param: { id }
+  });
+  return unwrapJson<VerifySanitizeResponse>(res);
+}
+
+export async function fetchManuscriptDetail(id: string): Promise<ManuscriptDetailResponse> {
+  const res = await apiClient.api.manuscripts[':id'].$get({
+    param: { id }
+  });
+  return unwrapJson<ManuscriptDetailResponse>(res);
+}
+
+export async function updateManuscript(
+  id: string,
+  input: UpdateManuscriptRequest
+): Promise<ManuscriptResponse> {
+  const res = await apiClient.api.manuscripts[':id'].$patch({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<ManuscriptResponse>(res);
+}
+
+export async function resolveVerifyClaim(
+  id: string,
+  input: ResolveVerifyRequest
+): Promise<ManuscriptResponse> {
+  const res = await apiClient.api.manuscripts[':id']['resolve-verify'].$post({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<ManuscriptResponse>(res);
+}
+
+export async function approveManuscript(
+  id: string,
+  input: ApproveManuscriptRequest
+): Promise<ManuscriptResponse> {
+  const res = await apiClient.api.manuscripts[':id'].approve.$post({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<ManuscriptResponse>(res);
+}
+
 export async function uploadBlobToPresignedUrl(
   uploadUrl: string,
   blob: Blob,
@@ -273,8 +457,6 @@ export async function uploadBlobToPresignedUrl(
       `업로드 파일 크기(${blob.size}B)가 서명 요청 크기(${expectedByteSize}B)와 일치하지 않습니다.`
     );
   }
-  // 브라우저는 Blob 본문에 맞춰 Content-Length 헤더를 자동 전송하므로
-  // presign의 content-length 서명 값(blob.size === expectedByteSize)과 정확히 일치합니다.
   const res = await fetchImpl(uploadUrl, {
     method: 'PUT',
     headers: {

@@ -114,6 +114,9 @@ export const createCategoryRequestSchema = categoryProfileBaseSchema
     created_at: true,
     updated_at: true
   })
+  .extend({
+    confirm_borderline: z.boolean().optional()
+  })
   .superRefine(validateCategoryRules);
 
 export const updateCategoryRequestSchema = z
@@ -125,7 +128,8 @@ export const updateCategoryRequestSchema = z
     seed_keywords: z.array(z.string().trim().min(1).max(50)).max(30).optional(),
     primary_source_domains: z.array(z.string().trim().min(1).max(120)).max(50).optional(),
     default_media_policy: mediaPolicySchema.optional(),
-    default_visibility: visibilitySchema.optional()
+    default_visibility: visibilitySchema.optional(),
+    confirm_borderline: z.boolean().optional()
   })
   .superRefine((val, ctx) => {
     if (

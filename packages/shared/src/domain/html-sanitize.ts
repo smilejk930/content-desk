@@ -131,3 +131,14 @@ export function sanitizeManuscriptHtml(
 
   return output.join('');
 }
+
+export function stripHtmlToPlainText(html: string): string {
+  return decodeBasicEntities(
+    html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(?:p|h2|h3|li|blockquote|div)>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+  )
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}

@@ -4,11 +4,11 @@
 # Phase 2 필요한 비밀키 (R2 서명 URL 발급용):
 # R2_ACCESS_KEY_ID=
 # R2_SECRET_ACCESS_KEY=
-# Phase 3 이후 필요한 비밀키:
-# GEMINI_API_KEY는 Phase 3(할당량 원장·usage_daily 연동)부터 사용하며, Phase 2 프로덕션 환경에는 등록하지 않습니다.
+# Phase 3 필요한 비밀키 (할당량 원장·usage_daily 연동):
 # GEMINI_API_KEY=
 # NAVER_CLIENT_ID=
 # NAVER_CLIENT_SECRET=
+# 선택형 검색광고 API (미설정 시 Google Trends RSS 및 네이버 기본 파이프라인으로 동작):
 # NAVER_SEARCHAD_API_KEY=
 # NAVER_SEARCHAD_SECRET_KEY=
 # NAVER_SEARCHAD_CUSTOMER_ID=

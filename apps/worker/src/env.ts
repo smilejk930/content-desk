@@ -33,6 +33,12 @@ export interface WorkerBindings {
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
   GEMINI_API_KEY?: string;
+  GEMINI_IMAGE_DAILY_CAP?: string;
+  NAVER_CLIENT_ID?: string;
+  NAVER_CLIENT_SECRET?: string;
+  NAVER_SEARCHAD_API_KEY?: string;
+  NAVER_SEARCHAD_SECRET_KEY?: string;
+  NAVER_SEARCHAD_CUSTOMER_ID?: string;
   SESSION_MAX_AGE_SECONDS: string;
   REAUTH_MAX_AGE_SECONDS: string;
   CLOCK_SKEW_SECONDS: string;

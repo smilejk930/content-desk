@@ -228,11 +228,11 @@ describe('관리자 사용자 관리 API (/api/admin/users*)', () => {
       ).bind('user-usage-1', 'naver_search', utcToday, 15),
       env.DB.prepare(
         `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
-      ).bind('user-usage-1', 'gemini', pacificToday, 4),
+      ).bind('user-usage-1', 'gemini_text', pacificToday, 4),
       // Old date usage must NOT be counted in todayUsage
       env.DB.prepare(
         `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
-      ).bind('user-usage-1', 'gemini', '2020-01-01', 99),
+      ).bind('user-usage-1', 'gemini_text', '2020-01-01', 99),
       // Private content row that must NEVER leak into admin list response
       env.DB.prepare(
         `INSERT INTO categories (category_id, owner_uid, display_name, discovery_mode, datalab_anchor_keyword, default_visibility, profile_json, created_at, updated_at)
@@ -273,10 +273,10 @@ describe('관리자 사용자 관리 API (/api/admin/users*)', () => {
     expect(userRow).toBeDefined();
     expect(userRow?.role).toBe('user');
     expect(userRow?.todayUsage.totalCalls).toBe(19);
-    expect(userRow?.todayUsage.byProvider).toEqual({ naver_search: 15, gemini: 4 });
+    expect(userRow?.todayUsage.byProvider).toEqual({ naver_search: 15, gemini_text: 4 });
   });
 
-  it('aggregates gemini* by America/Los_Angeles date and other providers by UTC date during 00:00-08:00 UTC split window', async () => {
+  it('aggregates gemini_text/gemini_image by America/Los_Angeles date and other providers by UTC date using shared mapping table', async () => {
     // Pick tomorrow 03:00:00Z so UTC date is (D+1) while America/Los_Angeles is still (D),
     // and timestamp remains well within the 30-day test X.509 cert validity window.
     const realNow = new Date();
@@ -305,17 +305,17 @@ describe('관리자 사용자 관리 API (/api/admin/users*)', () => {
         env.DB.prepare(
           `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
         ).bind('user-tz-1', 'naver_search', expectedPacificDate, 99),
-        // Active America/Los_Angeles window for gemini* -> counted
+        // Active America/Los_Angeles window for gemini_text / gemini_image -> counted
         env.DB.prepare(
           `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
-        ).bind('user-tz-1', 'gemini', expectedPacificDate, 6),
+        ).bind('user-tz-1', 'gemini_text', expectedPacificDate, 6),
         env.DB.prepare(
           `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
-        ).bind('user-tz-1', 'gemini-flash', expectedPacificDate, 4),
-        // Next Pacific day (= UTC date) for gemini -> NOT counted
+        ).bind('user-tz-1', 'gemini_image', expectedPacificDate, 4),
+        // Next Pacific day (= UTC date) for gemini_text -> NOT counted
         env.DB.prepare(
           `INSERT INTO usage_daily (owner_uid, provider, window_date, calls) VALUES (?, ?, ?, ?)`
-        ).bind('user-tz-1', 'gemini', expectedUtcDate, 88)
+        ).bind('user-tz-1', 'gemini_text', expectedUtcDate, 88)
       ]);
 
       const res = await SELF.fetch('https://worker.test/api/admin/users', {
@@ -330,8 +330,8 @@ describe('관리자 사용자 관리 API (/api/admin/users*)', () => {
       expect(tzUser?.todayUsage.totalCalls).toBe(21);
       expect(tzUser?.todayUsage.byProvider).toEqual({
         naver_search: 11,
-        gemini: 6,
-        'gemini-flash': 4
+        gemini_text: 6,
+        gemini_image: 4
       });
     } finally {
       vi.useRealTimers();

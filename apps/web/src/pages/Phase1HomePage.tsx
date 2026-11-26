@@ -13,6 +13,8 @@ import { StatusBadge } from '../components/StatusBadge';
 import { AccessDeniedPage } from './AccessDeniedPage';
 import { AdminUsersPage, type AdminUsersPageProps } from './AdminUsersPage';
 import { CategoriesPage, type CategoriesPageProps } from './CategoriesPage';
+import { DiscoveryPage, type DiscoveryPageProps } from './DiscoveryPage';
+import { ManuscriptPage, type ManuscriptPageProps } from './ManuscriptPage';
 import { MobileUploadPage, type MobileUploadPageProps } from './MobileUploadPage';
 
 export interface Phase1HomePageProps {
@@ -24,9 +26,11 @@ export interface Phase1HomePageProps {
   adminPageProps?: AdminUsersPageProps;
   categoriesPageProps?: CategoriesPageProps;
   uploadPageProps?: MobileUploadPageProps;
+  discoveryPageProps?: DiscoveryPageProps;
+  manuscriptPageProps?: ManuscriptPageProps;
 }
 
-type ActiveTab = 'home' | 'categories' | 'upload' | 'admin-users';
+type ActiveTab = 'home' | 'categories' | 'upload' | 'discovery' | 'manuscripts' | 'admin-users';
 
 export function Phase1HomePage({
   user,
@@ -36,10 +40,13 @@ export function Phase1HomePage({
   onSignOut = signOutUser,
   adminPageProps,
   categoriesPageProps,
-  uploadPageProps
+  uploadPageProps,
+  discoveryPageProps,
+  manuscriptPageProps
 }: Phase1HomePageProps) {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
   const meQuery = useQuery({
     queryKey: ['me', user.uid],
@@ -70,12 +77,19 @@ export function Phase1HomePage({
   const currentTab: ActiveTab =
     activeTab === 'admin-users' && !isAdmin ? 'home' : activeTab;
 
+  const navTabClass = (tab: ActiveTab) =>
+    `pill-btn px-4 text-sm font-semibold ${
+      currentTab === tab
+        ? 'bg-surface text-cta'
+        : 'border border-ink-inverse/30 text-ink-inverse'
+    }`;
+
   return (
     <main className="flex min-h-dvh flex-col bg-canvas">
       <header className="bg-band px-5 py-4 text-ink-inverse">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-ink-inverse-soft">PHASE 2 · M1 JOURNEY 1</p>
+            <p className="text-xs text-ink-inverse-soft">PHASE 3 · M1 JOURNEY 2</p>
             <h1 className="text-xl font-semibold">Content Desk</h1>
           </div>
 
@@ -86,11 +100,7 @@ export function Phase1HomePage({
                   type="button"
                   onClick={() => setActiveTab('home')}
                   aria-current={currentTab === 'home' ? 'page' : undefined}
-                  className={`pill-btn px-4 text-sm font-semibold ${
-                    currentTab === 'home'
-                      ? 'bg-surface text-cta'
-                      : 'border border-ink-inverse/30 text-ink-inverse'
-                  }`}
+                  className={navTabClass('home')}
                 >
                   홈
                 </button>
@@ -98,11 +108,7 @@ export function Phase1HomePage({
                   type="button"
                   onClick={() => setActiveTab('categories')}
                   aria-current={currentTab === 'categories' ? 'page' : undefined}
-                  className={`pill-btn px-4 text-sm font-semibold ${
-                    currentTab === 'categories'
-                      ? 'bg-surface text-cta'
-                      : 'border border-ink-inverse/30 text-ink-inverse'
-                  }`}
+                  className={navTabClass('categories')}
                 >
                   카테고리
                 </button>
@@ -110,24 +116,32 @@ export function Phase1HomePage({
                   type="button"
                   onClick={() => setActiveTab('upload')}
                   aria-current={currentTab === 'upload' ? 'page' : undefined}
-                  className={`pill-btn px-4 text-sm font-semibold ${
-                    currentTab === 'upload'
-                      ? 'bg-surface text-cta'
-                      : 'border border-ink-inverse/30 text-ink-inverse'
-                  }`}
+                  className={navTabClass('upload')}
                 >
                   자료 올리기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('discovery')}
+                  aria-current={currentTab === 'discovery' ? 'page' : undefined}
+                  className={navTabClass('discovery')}
+                >
+                  글감 발굴
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manuscripts')}
+                  aria-current={currentTab === 'manuscripts' ? 'page' : undefined}
+                  className={navTabClass('manuscripts')}
+                >
+                  원고 편집·검증
                 </button>
                 {isAdmin && (
                   <button
                     type="button"
                     onClick={() => setActiveTab('admin-users')}
                     aria-current={currentTab === 'admin-users' ? 'page' : undefined}
-                    className={`pill-btn px-4 text-sm font-semibold ${
-                      currentTab === 'admin-users'
-                        ? 'bg-surface text-cta'
-                        : 'border border-ink-inverse/30 text-ink-inverse'
-                    }`}
+                    className={navTabClass('admin-users')}
                   >
                     사용자 관리
                   </button>
@@ -179,6 +193,23 @@ export function Phase1HomePage({
           />
         )}
 
+        {meQuery.data && currentTab === 'discovery' && (
+          <DiscoveryPage
+            {...discoveryPageProps}
+            onSelectTopicForManuscript={(topicId) => {
+              setSelectedTopicId(topicId);
+              setActiveTab('manuscripts');
+            }}
+          />
+        )}
+
+        {meQuery.data && currentTab === 'manuscripts' && (
+          <ManuscriptPage
+            {...manuscriptPageProps}
+            initialTopicId={selectedTopicId}
+          />
+        )}
+
         {meQuery.data && currentTab === 'admin-users' && isAdmin && (
           <AdminUsersPage {...adminPageProps} />
         )}
@@ -220,7 +251,9 @@ export function Phase1HomePage({
                 </div>
                 <div className="rounded-lg bg-surface-subtle p-3.5">
                   <dt className="text-xs text-ink-soft">현재 단계</dt>
-                  <dd className="mt-1 text-sm text-ink">Phase 2: 카테고리 · 현장 사진·메모 업로드(R2)</dd>
+                  <dd className="mt-1 text-sm text-ink">
+                    Phase 3: 글감 발굴 · 1차 출처 스냅샷 · 원고 생성/검증/승인
+                  </dd>
                 </div>
               </dl>
 
@@ -230,14 +263,28 @@ export function Phase1HomePage({
                   onClick={() => setActiveTab('categories')}
                   className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta"
                 >
-                  카테고리 관리로 이동
+                  카테고리 관리
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('upload')}
-                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
+                  className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta"
                 >
                   현장 사진·메모 올리기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('discovery')}
+                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
+                >
+                  글감 발굴 시작
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manuscripts')}
+                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
+                >
+                  원고 편집·검증
                 </button>
               </div>
             </section>

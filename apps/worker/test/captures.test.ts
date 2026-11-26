@@ -28,6 +28,8 @@ beforeEach(async () => {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM captures'),
     env.DB.prepare('DELETE FROM categories'),
+    env.DB.prepare('DELETE FROM usage_daily'),
+    env.DB.prepare('DELETE FROM quota_ledger'),
     env.DB.prepare('DELETE FROM users')
   ]);
   vi.restoreAllMocks();
@@ -38,6 +40,20 @@ beforeEach(async () => {
         status: 200,
         headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' }
       });
+    }
+    if (url.includes('generativelanguage.googleapis.com')) {
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: JSON.stringify({ verdict: 'SAFE', reason: '비YMYL 주제입니다.' }) }]
+              }
+            }
+          ]
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
     }
     throw new Error(`Unexpected external fetch in captures.test: ${url}`);
   });

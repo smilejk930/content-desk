@@ -37,13 +37,31 @@ describe('가입 경로 차단 및 사용자 상태 전수 검증 (ADMIN_UIDS / 
     { method: 'PATCH', path: '/api/admin/users/some-user-1' },
     { method: 'GET', path: '/api/categories' },
     { method: 'POST', path: '/api/categories' },
+    { method: 'PATCH', path: '/api/categories/cat-1' },
+    { method: 'DELETE', path: '/api/categories/cat-1' },
     { method: 'POST', path: '/api/captures/presign' },
+    { method: 'GET', path: '/api/captures' },
+    { method: 'POST', path: '/api/captures' },
+    { method: 'GET', path: '/api/captures/cap-1' },
+    { method: 'POST', path: '/api/captures/cap-1/consent' },
     { method: 'POST', path: '/api/manuscripts/m1/approve' },
     { method: 'POST', path: '/api/media/download-urls' },
     { method: 'POST', path: '/api/export' },
     { method: 'POST', path: '/api/bridge/tokens' },
     { method: 'DELETE', path: '/api/bridge/tokens/t1' },
     { method: 'POST', path: '/api/bridge/jobs' }
+  ];
+
+  const phase2Endpoints: Array<{ method: string; path: string }> = [
+    { method: 'GET', path: '/api/categories' },
+    { method: 'POST', path: '/api/categories' },
+    { method: 'PATCH', path: '/api/categories/cat-1' },
+    { method: 'DELETE', path: '/api/categories/cat-1' },
+    { method: 'POST', path: '/api/captures/presign' },
+    { method: 'GET', path: '/api/captures' },
+    { method: 'POST', path: '/api/captures' },
+    { method: 'GET', path: '/api/captures/cap-1' },
+    { method: 'POST', path: '/api/captures/cap-1/consent' }
   ];
 
   it.each(endpoints)(
@@ -104,6 +122,19 @@ describe('가입 경로 차단 및 사용자 상태 전수 검증 (ADMIN_UIDS / 
     expect(second.status).toBe(403);
     const secondBody = (await second.json()) as { error: { code: string } };
     expect(secondBody.error.code).toBe('USER_BLOCKED');
+
+    for (const ep of phase2Endpoints) {
+      const blockedRes = await SELF.fetch(`https://worker.test${ep.path}`, {
+        method: ep.method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      expect(blockedRes.status).toBe(403);
+      const blockedBody = (await blockedRes.json()) as { error: { code: string } };
+      expect(blockedBody.error.code).toBe('USER_BLOCKED');
+    }
   });
 
   it('allows ADMIN_UIDS user without any row in D1 users table and returns role=admin', async () => {

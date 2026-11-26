@@ -13,6 +13,7 @@
   "dependencies": {
     "@content-desk/shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "exifr": "catalog:",
     "firebase": "catalog:",
     "hono": "catalog:",
     "react": "catalog:",

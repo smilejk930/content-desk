@@ -39,6 +39,9 @@ catalogs:
     concurrently:
       specifier: 10.0.7
       version: 10.0.7
+    exifr:
+      specifier: 7.1.3
+      version: 7.1.3
     firebase:
       specifier: 13.4.0
       version: 13.4.0
@@ -95,6 +98,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.108.1(@types/react@19.3.0)(react@19.3.1)
+      exifr:
+        specifier: 'catalog:'
+        version: 7.1.3
       firebase:
         specifier: 'catalog:'
         version: 13.4.0(@types/react@19.3.0)(react@19.3.1)
@@ -1953,6 +1959,9 @@ packages:
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
     engines: {node: '>=6'}
+
+  exifr@7.1.3:
+    resolution: {integrity: sha512-g/aje2noHivrRSLbAUtBPWFbxKdKhgj/xr1vATDdUXPOFYJlQ62Ft0oy+72V6XLIpDJfHs6gXLbBLAolqOXYRw==}
 
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
@@ -4202,6 +4211,8 @@ snapshots:
       '@types/estree': 1.0.10
 
   event-target-shim@5.0.1: {}
+
+  exifr@7.1.3: {}
 
   expect-type@1.4.0: {}
 

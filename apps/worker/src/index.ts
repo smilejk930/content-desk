@@ -5,8 +5,10 @@ import { cors } from 'hono/cors';
 import { parseCsvList, type WorkerBindings, type WorkerEnv } from './env.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { adminRoute } from './routes/admin.js';
-import { meRoute } from './routes/me.js';
+import { capturesRoute } from './routes/captures.js';
+import { categoriesRoute } from './routes/categories.js';
 import { exportRoute } from './routes/export.js';
+import { meRoute } from './routes/me.js';
 import { protectedStubsRoute } from './routes/stubs.js';
 
 const app = new Hono<WorkerEnv>();
@@ -31,6 +33,8 @@ const routes = app
   .get('/api/health', (c) => c.json({ ok: true, service: 'content-desk-worker' }))
   .route('/api/me', meRoute)
   .route('/api/admin', adminRoute)
+  .route('/api/categories', categoriesRoute)
+  .route('/api/captures', capturesRoute)
   .route('/api/export', exportRoute)
   .route('/api', protectedStubsRoute);
 

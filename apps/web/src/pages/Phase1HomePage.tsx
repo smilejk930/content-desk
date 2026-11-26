@@ -12,6 +12,8 @@ import { signOutUser } from '../lib/firebase';
 import { StatusBadge } from '../components/StatusBadge';
 import { AccessDeniedPage } from './AccessDeniedPage';
 import { AdminUsersPage, type AdminUsersPageProps } from './AdminUsersPage';
+import { CategoriesPage, type CategoriesPageProps } from './CategoriesPage';
+import { MobileUploadPage, type MobileUploadPageProps } from './MobileUploadPage';
 
 export interface Phase1HomePageProps {
   user: Pick<User, 'uid'>;
@@ -20,9 +22,11 @@ export interface Phase1HomePageProps {
   runExport?: () => Promise<ExportResponse>;
   onSignOut?: () => Promise<void> | void;
   adminPageProps?: AdminUsersPageProps;
+  categoriesPageProps?: CategoriesPageProps;
+  uploadPageProps?: MobileUploadPageProps;
 }
 
-type ActiveTab = 'home' | 'admin-users';
+type ActiveTab = 'home' | 'categories' | 'upload' | 'admin-users';
 
 export function Phase1HomePage({
   user,
@@ -30,7 +34,9 @@ export function Phase1HomePage({
   loadMe = fetchMe,
   runExport = triggerExport,
   onSignOut = signOutUser,
-  adminPageProps
+  adminPageProps,
+  categoriesPageProps,
+  uploadPageProps
 }: Phase1HomePageProps) {
   const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -61,20 +67,21 @@ export function Phase1HomePage({
   }
 
   const isAdmin = meQuery.data?.role === 'admin';
-  const currentTab: ActiveTab = isAdmin ? activeTab : 'home';
+  const currentTab: ActiveTab =
+    activeTab === 'admin-users' && !isAdmin ? 'home' : activeTab;
 
   return (
     <main className="flex min-h-dvh flex-col bg-canvas">
       <header className="bg-band px-5 py-4 text-ink-inverse">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-ink-inverse-soft">PHASE 1.5 MULTI-USER</p>
+            <p className="text-xs text-ink-inverse-soft">PHASE 2 · M1 JOURNEY 1</p>
             <h1 className="text-xl font-semibold">Content Desk</h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {isAdmin && (
-              <nav aria-label="관리자 메뉴" className="flex items-center gap-2">
+            {meQuery.data && (
+              <nav aria-label="주 메뉴" className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab('home')}
@@ -89,16 +96,42 @@ export function Phase1HomePage({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('admin-users')}
-                  aria-current={currentTab === 'admin-users' ? 'page' : undefined}
+                  onClick={() => setActiveTab('categories')}
+                  aria-current={currentTab === 'categories' ? 'page' : undefined}
                   className={`pill-btn px-4 text-sm font-semibold ${
-                    currentTab === 'admin-users'
+                    currentTab === 'categories'
                       ? 'bg-surface text-cta'
                       : 'border border-ink-inverse/30 text-ink-inverse'
                   }`}
                 >
-                  사용자 관리
+                  카테고리
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('upload')}
+                  aria-current={currentTab === 'upload' ? 'page' : undefined}
+                  className={`pill-btn px-4 text-sm font-semibold ${
+                    currentTab === 'upload'
+                      ? 'bg-surface text-cta'
+                      : 'border border-ink-inverse/30 text-ink-inverse'
+                  }`}
+                >
+                  자료 올리기
+                </button>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('admin-users')}
+                    aria-current={currentTab === 'admin-users' ? 'page' : undefined}
+                    className={`pill-btn px-4 text-sm font-semibold ${
+                      currentTab === 'admin-users'
+                        ? 'bg-surface text-cta'
+                        : 'border border-ink-inverse/30 text-ink-inverse'
+                    }`}
+                  >
+                    사용자 관리
+                  </button>
+                )}
               </nav>
             )}
 
@@ -133,6 +166,17 @@ export function Phase1HomePage({
               {getApiErrorMessage(meQuery.error, '상태 조회에 실패했습니다.')}
             </p>
           </section>
+        )}
+
+        {meQuery.data && currentTab === 'categories' && (
+          <CategoriesPage {...categoriesPageProps} />
+        )}
+
+        {meQuery.data && currentTab === 'upload' && (
+          <MobileUploadPage
+            {...uploadPageProps}
+            onNavigateCategories={() => setActiveTab('categories')}
+          />
         )}
 
         {meQuery.data && currentTab === 'admin-users' && isAdmin && (
@@ -175,10 +219,27 @@ export function Phase1HomePage({
                   <dd className="mt-1 text-sm text-ink">{meQuery.data.reauth_valid_until}</dd>
                 </div>
                 <div className="rounded-lg bg-surface-subtle p-3.5">
-                  <dt className="text-xs text-ink-soft">다음 단계</dt>
-                  <dd className="mt-1 text-sm text-ink">Phase 2: 카테고리·사진 업로드(R2)</dd>
+                  <dt className="text-xs text-ink-soft">현재 단계</dt>
+                  <dd className="mt-1 text-sm text-ink">Phase 2: 카테고리 · 현장 사진·메모 업로드(R2)</dd>
                 </div>
               </dl>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('categories')}
+                  className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta"
+                >
+                  카테고리 관리로 이동
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('upload')}
+                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
+                >
+                  현장 사진·메모 올리기
+                </button>
+              </div>
             </section>
 
             <section className="card-surface p-6">

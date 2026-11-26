@@ -30,6 +30,9 @@ export interface WorkerBindings {
   ALLOWED_ORIGINS: string;
   R2_ACCOUNT_ID: string;
   R2_BUCKET_NAME: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  GEMINI_API_KEY?: string;
   SESSION_MAX_AGE_SECONDS: string;
   REAUTH_MAX_AGE_SECONDS: string;
   CLOCK_SKEW_SECONDS: string;

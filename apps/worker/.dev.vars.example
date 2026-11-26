@@ -1,13 +1,14 @@
 # 로컬 개발 전용 비밀키 (실제 값은 .dev.vars에 직접 입력하며 Git 커밋 금지)
 # Phase 1 / Phase 1.5에서는 빈 파일이어도 로컬 인증·다중 사용자·D1 테스트가 동작합니다.
 # 관리자 UID(ADMIN_UIDS)와 허용 출처(ALLOWED_ORIGINS)는 비밀키가 아니므로 wrangler.toml [vars]에서 관리합니다.
-# Phase 2 이후 필요한 비밀키:
+# Phase 2 필요한 비밀키 (R2 서명 URL 발급용):
 # R2_ACCESS_KEY_ID=
 # R2_SECRET_ACCESS_KEY=
 # Phase 3 이후 필요한 비밀키:
+# GEMINI_API_KEY는 Phase 3(할당량 원장·usage_daily 연동)부터 사용하며, Phase 2 프로덕션 환경에는 등록하지 않습니다.
+# GEMINI_API_KEY=
 # NAVER_CLIENT_ID=
 # NAVER_CLIENT_SECRET=
-# GEMINI_API_KEY=
 # NAVER_SEARCHAD_API_KEY=
 # NAVER_SEARCHAD_SECRET_KEY=
 # NAVER_SEARCHAD_CUSTOMER_ID=

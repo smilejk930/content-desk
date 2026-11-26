@@ -4,10 +4,22 @@ import type {
   AdminUsersListResponse,
   ApiErrorCode,
   ApiErrorPayload,
+  CapturePresignRequest,
+  CapturePresignResponse,
+  CaptureResponse,
+  CapturesListResponse,
+  CaptureUploadMime,
+  CategoriesListResponse,
+  CategoryResponse,
   CreateAdminUserRequest,
+  CreateCaptureRequest,
+  CreateCategoryRequest,
+  DeleteCategoryResponse,
   ExportResponse,
+  LlmConsentRequest,
   MeResponse,
-  UpdateAdminUserRequest
+  UpdateAdminUserRequest,
+  UpdateCategoryRequest
 } from '@content-desk/shared';
 import type { AppType } from '@content-desk/worker/app-type';
 import { getCurrentIdToken, signOutUser } from './firebase';
@@ -139,6 +151,11 @@ export function getApiErrorMessage(err: unknown, fallback = '요청 처리 중 �
         return '이미 등록되었거나 관리자 목록에 포함된 UID입니다.';
       case 'REAUTH_REQUIRED':
         return '최근 15분 이내 Google 재인증이 필요합니다.';
+      case 'YMYL_BLOCKED':
+        return (
+          err.message ||
+          '의료·건강·금융·투자·법률 등 YMYL 금지 주제는 정책상 등록할 수 없습니다.'
+        );
       default:
         return err.message || fallback;
     }
@@ -177,4 +194,95 @@ export async function updateAdminUser(
     json: input
   });
   return unwrapJson<AdminUserMutationResponse>(res);
+}
+
+export async function fetchCategories(): Promise<CategoriesListResponse> {
+  const res = await apiClient.api.categories.$get();
+  return unwrapJson<CategoriesListResponse>(res);
+}
+
+export async function createCategory(input: CreateCategoryRequest): Promise<CategoryResponse> {
+  const res = await apiClient.api.categories.$post({ json: input });
+  return unwrapJson<CategoryResponse>(res);
+}
+
+export async function updateCategory(
+  id: string,
+  input: UpdateCategoryRequest
+): Promise<CategoryResponse> {
+  const res = await apiClient.api.categories[':id'].$patch({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<CategoryResponse>(res);
+}
+
+export async function deleteCategory(id: string): Promise<DeleteCategoryResponse> {
+  const res = await apiClient.api.categories[':id'].$delete({
+    param: { id }
+  });
+  return unwrapJson<DeleteCategoryResponse>(res);
+}
+
+export async function presignCaptureUploads(
+  input: CapturePresignRequest
+): Promise<CapturePresignResponse> {
+  const res = await apiClient.api.captures.presign.$post({ json: input });
+  return unwrapJson<CapturePresignResponse>(res);
+}
+
+export async function fetchCaptures(categoryId?: string): Promise<CapturesListResponse> {
+  const res = await apiClient.api.captures.$get({
+    query: categoryId ? { category_id: categoryId } : {}
+  });
+  return unwrapJson<CapturesListResponse>(res);
+}
+
+export async function createCapture(input: CreateCaptureRequest): Promise<CaptureResponse> {
+  const res = await apiClient.api.captures.$post({ json: input });
+  return unwrapJson<CaptureResponse>(res);
+}
+
+export async function fetchCapture(id: string): Promise<CaptureResponse> {
+  const res = await apiClient.api.captures[':id'].$get({
+    param: { id }
+  });
+  return unwrapJson<CaptureResponse>(res);
+}
+
+export async function consentCaptureLlm(
+  id: string,
+  input: LlmConsentRequest
+): Promise<CaptureResponse> {
+  const res = await apiClient.api.captures[':id'].consent.$post({
+    param: { id },
+    json: input
+  });
+  return unwrapJson<CaptureResponse>(res);
+}
+
+export async function uploadBlobToPresignedUrl(
+  uploadUrl: string,
+  blob: Blob,
+  contentType: CaptureUploadMime,
+  expectedByteSize?: number,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
+  if (expectedByteSize !== undefined && blob.size !== expectedByteSize) {
+    throw new Error(
+      `업로드 파일 크기(${blob.size}B)가 서명 요청 크기(${expectedByteSize}B)와 일치하지 않습니다.`
+    );
+  }
+  // 브라우저는 Blob 본문에 맞춰 Content-Length 헤더를 자동 전송하므로
+  // presign의 content-length 서명 값(blob.size === expectedByteSize)과 정확히 일치합니다.
+  const res = await fetchImpl(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType
+    },
+    body: blob
+  });
+  if (!res.ok) {
+    throw new Error(`R2 이미지 업로드에 실패했습니다 (HTTP ${res.status}).`);
+  }
 }

@@ -16,6 +16,10 @@ export default defineConfig(async () => {
             FIREBASE_PROJECT_ID: 'content-desk-b9c3d',
             ADMIN_UIDS: 'owner-uid-1',
             ALLOWED_ORIGINS: 'http://localhost:5173',
+            R2_ACCOUNT_ID: 'test-r2-account-id',
+            R2_BUCKET_NAME: 'content-desk-bucket',
+            R2_ACCESS_KEY_ID: 'test-r2-access-key-id',
+            R2_SECRET_ACCESS_KEY: 'test-r2-secret-access-key',
             SESSION_MAX_AGE_SECONDS: '1209600',
             REAUTH_MAX_AGE_SECONDS: '900',
             CLOCK_SKEW_SECONDS: '60'

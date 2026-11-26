@@ -255,4 +255,149 @@ describe('사람별 데이터 격리 (사용자 A / 사용자 B / 관리자 및 
         .run()
     ).rejects.toThrow(/FOREIGN KEY constraint failed/i);
   });
+
+  it('isolates Phase 2 categories, captures, presign, and consent APIs from both other users and admin (404 NOT_FOUND + 0 list rows)', async () => {
+    const nowIso = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-a-001', '사용자 A', nowIso, nowIso, nowIso),
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-b-002', '사용자 B', nowIso, nowIso, nowIso)
+    ]);
+
+    const tokenA = await signFirebaseToken({ keyPair, sub: 'user-a-001' });
+    const tokenB = await signFirebaseToken({ keyPair, sub: 'user-b-002' });
+    const tokenAdmin = await signFirebaseToken({ keyPair, sub: 'owner-uid-1' });
+
+    // User A creates a category and a capture
+    const catRes = await SELF.fetch('https://worker.test/api/categories', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenA}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        display_name: '성수 카페',
+        naver_board_name: '카페',
+        discovery_mode: 'experience_first',
+        datalab_anchor_keyword: '성수동 카페',
+        seed_keywords: ['드립커피'],
+        primary_source_domains: [],
+        default_media_policy: {
+          allowed_content_types: ['experience_review'],
+          min_real_photos: 0,
+          require_field_memo: true
+        },
+        default_visibility: '전체공개'
+      })
+    });
+    expect(catRes.status).toBe(201);
+    const { category } = (await catRes.json()) as { category: { category_id: string } };
+
+    const capRes = await SELF.fetch('https://worker.test/api/captures', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenA}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category_id: category.category_id,
+        content_type: 'experience_review',
+        photos: [],
+        field_memo: '사용자 A의 비공개 현장 메모',
+        sponsorship: { is_sponsored: false }
+      })
+    });
+    expect(capRes.status).toBe(201);
+    const { capture } = (await capRes.json()) as { capture: { capture_id: string } };
+
+    // Both User B and Admin must see 0 rows in list APIs and receive 404 NOT_FOUND on every targeted endpoint
+    for (const otherToken of [tokenB, tokenAdmin]) {
+      const catList = await SELF.fetch('https://worker.test/api/categories', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(catList.status).toBe(200);
+      expect(((await catList.json()) as { categories: unknown[] }).categories).toHaveLength(0);
+
+      const catPatch = await SELF.fetch(
+        `https://worker.test/api/categories/${category.category_id}`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${otherToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ naver_board_name: '탈취시도' })
+        }
+      );
+      expect(catPatch.status).toBe(404);
+      expect(((await catPatch.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+
+      const catDel = await SELF.fetch(
+        `https://worker.test/api/categories/${category.category_id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${otherToken}` }
+        }
+      );
+      expect(catDel.status).toBe(404);
+      expect(((await catDel.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+
+      const presignCross = await SELF.fetch('https://worker.test/api/captures/presign', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${otherToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          capture_id: 'cap-cross-presign',
+          category_id: category.category_id,
+          files: [{ seq: 1, content_type: 'image/webp', byte_size: 1024 }]
+        })
+      });
+      expect(presignCross.status).toBe(404);
+      expect(((await presignCross.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+
+      const createCrossCapture = await SELF.fetch('https://worker.test/api/captures', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${otherToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category_id: category.category_id,
+          content_type: 'experience_review',
+          photos: [],
+          field_memo: '타인 카테고리 참조 시도'
+        })
+      });
+      expect(createCrossCapture.status).toBe(404);
+      expect(((await createCrossCapture.json()) as { error: { code: string } }).error.code).toBe(
+        'NOT_FOUND'
+      );
+
+      const capList = await SELF.fetch('https://worker.test/api/captures', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(capList.status).toBe(200);
+      expect(((await capList.json()) as { captures: unknown[] }).captures).toHaveLength(0);
+
+      const capDetail = await SELF.fetch(
+        `https://worker.test/api/captures/${capture.capture_id}`,
+        {
+          headers: { Authorization: `Bearer ${otherToken}` }
+        }
+      );
+      expect(capDetail.status).toBe(404);
+      expect(((await capDetail.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+
+      const capConsent = await SELF.fetch(
+        `https://worker.test/api/captures/${capture.capture_id}/consent`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${otherToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ acknowledged_free_tier_training: true })
+        }
+      );
+      expect(capConsent.status).toBe(404);
+      expect(((await capConsent.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+    }
+
+    // Verify User A's category and capture remain intact and unconsented
+    const verifyA = await SELF.fetch(`https://worker.test/api/captures/${capture.capture_id}`, {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    expect(verifyA.status).toBe(200);
+    const verifiedBody = (await verifyA.json()) as { capture: { llm_consent_at: string | null } };
+    expect(verifiedBody.capture.llm_consent_at).toBeNull();
+  });
 });

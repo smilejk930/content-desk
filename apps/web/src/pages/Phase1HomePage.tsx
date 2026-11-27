@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { ExportResponse, MeResponse } from '@content-desk/shared';
 import type { User } from 'firebase/auth';
 import {
@@ -13,9 +13,13 @@ import { StatusBadge } from '../components/StatusBadge';
 import { AccessDeniedPage } from './AccessDeniedPage';
 import { AdminUsersPage, type AdminUsersPageProps } from './AdminUsersPage';
 import { CategoriesPage, type CategoriesPageProps } from './CategoriesPage';
+import { CopyPanelPage, type CopyPanelPageProps } from './CopyPanelPage';
+import { DashboardPage, type DashboardPageProps } from './DashboardPage';
 import { DiscoveryPage, type DiscoveryPageProps } from './DiscoveryPage';
 import { ManuscriptPage, type ManuscriptPageProps } from './ManuscriptPage';
 import { MobileUploadPage, type MobileUploadPageProps } from './MobileUploadPage';
+import { PublishTrackerPage, type PublishTrackerPageProps } from './PublishTrackerPage';
+import { SettingsPage, type SettingsPageProps } from './SettingsPage';
 
 export interface Phase1HomePageProps {
   user: Pick<User, 'uid'>;
@@ -28,9 +32,22 @@ export interface Phase1HomePageProps {
   uploadPageProps?: MobileUploadPageProps;
   discoveryPageProps?: DiscoveryPageProps;
   manuscriptPageProps?: ManuscriptPageProps;
+  copyPanelPageProps?: CopyPanelPageProps;
+  publishTrackerPageProps?: PublishTrackerPageProps;
+  dashboardPageProps?: Omit<DashboardPageProps, 'me' | 'd1LimitResetAt'>;
+  settingsPageProps?: Omit<SettingsPageProps, 'me'>;
 }
 
-type ActiveTab = 'home' | 'categories' | 'upload' | 'discovery' | 'manuscripts' | 'admin-users';
+type ActiveTab =
+  | 'home'
+  | 'categories'
+  | 'upload'
+  | 'discovery'
+  | 'manuscripts'
+  | 'copy-panel'
+  | 'publish'
+  | 'settings'
+  | 'admin-users';
 
 export function Phase1HomePage({
   user,
@@ -42,26 +59,20 @@ export function Phase1HomePage({
   categoriesPageProps,
   uploadPageProps,
   discoveryPageProps,
-  manuscriptPageProps
+  manuscriptPageProps,
+  copyPanelPageProps,
+  publishTrackerPageProps,
+  dashboardPageProps,
+  settingsPageProps
 }: Phase1HomePageProps) {
-  const [exportMessage, setExportMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
 
   const meQuery = useQuery({
     queryKey: ['me', user.uid],
     queryFn: loadMe,
     retry: false
-  });
-
-  const exportMutation = useMutation({
-    mutationFn: runExport,
-    onSuccess: (data) => {
-      setExportMessage(`본인 데이터 내보내기 확인 완료 (시각: ${data.exported_at})`);
-    },
-    onError: (err) => {
-      setExportMessage(getApiErrorMessage(err, '내보내기 요청이 실패했습니다.'));
-    }
   });
 
   if (
@@ -89,7 +100,7 @@ export function Phase1HomePage({
       <header className="bg-band px-5 py-4 text-ink-inverse">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-ink-inverse-soft">PHASE 3 · M1 JOURNEY 2</p>
+            <p className="text-xs text-ink-inverse-soft">PHASE 4 · M1 JOURNEY 3·4</p>
             <h1 className="text-xl font-semibold">Content Desk</h1>
           </div>
 
@@ -102,7 +113,7 @@ export function Phase1HomePage({
                   aria-current={currentTab === 'home' ? 'page' : undefined}
                   className={navTabClass('home')}
                 >
-                  홈
+                  대시보드
                 </button>
                 <button
                   type="button"
@@ -135,6 +146,30 @@ export function Phase1HomePage({
                   className={navTabClass('manuscripts')}
                 >
                   원고 편집·검증
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('copy-panel')}
+                  aria-current={currentTab === 'copy-panel' ? 'page' : undefined}
+                  className={navTabClass('copy-panel')}
+                >
+                  복사·공유
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('publish')}
+                  aria-current={currentTab === 'publish' ? 'page' : undefined}
+                  className={navTabClass('publish')}
+                >
+                  발행·순위
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  aria-current={currentTab === 'settings' ? 'page' : undefined}
+                  className={navTabClass('settings')}
+                >
+                  설정
                 </button>
                 {isAdmin && (
                   <button
@@ -182,6 +217,16 @@ export function Phase1HomePage({
           </section>
         )}
 
+        {meQuery.data && currentTab === 'home' && (
+          <DashboardPage
+            {...dashboardPageProps}
+            me={meQuery.data}
+            d1LimitResetAt={d1LimitResetAt}
+            runExport={dashboardPageProps?.runExport ?? runExport}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+          />
+        )}
+
         {meQuery.data && currentTab === 'categories' && (
           <CategoriesPage {...categoriesPageProps} />
         )}
@@ -207,108 +252,46 @@ export function Phase1HomePage({
           <ManuscriptPage
             {...manuscriptPageProps}
             initialTopicId={selectedTopicId}
+            initialManuscriptId={selectedManuscriptId}
+            onOpenCopyPanel={(manuscriptId) => {
+              setSelectedManuscriptId(manuscriptId);
+              setActiveTab('copy-panel');
+            }}
+          />
+        )}
+
+        {meQuery.data && currentTab === 'copy-panel' && (
+          <CopyPanelPage
+            {...copyPanelPageProps}
+            initialManuscriptId={selectedManuscriptId}
+            onNavigateToManuscript={(manuscriptId) => {
+              setSelectedManuscriptId(manuscriptId);
+              setActiveTab('manuscripts');
+            }}
+            onNavigateToPublish={(manuscriptId) => {
+              setSelectedManuscriptId(manuscriptId);
+              setActiveTab('publish');
+            }}
+          />
+        )}
+
+        {meQuery.data && currentTab === 'publish' && (
+          <PublishTrackerPage
+            {...publishTrackerPageProps}
+            initialManuscriptId={selectedManuscriptId}
+          />
+        )}
+
+        {meQuery.data && currentTab === 'settings' && (
+          <SettingsPage
+            {...settingsPageProps}
+            me={meQuery.data}
+            runExport={settingsPageProps?.runExport ?? runExport}
           />
         )}
 
         {meQuery.data && currentTab === 'admin-users' && isAdmin && (
           <AdminUsersPage {...adminPageProps} />
-        )}
-
-        {meQuery.data && currentTab === 'home' && (
-          <>
-            <section className="card-surface p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-brand">인증 및 백엔드 연결 정상</h2>
-                  <p className="mt-1 text-sm text-ink-soft">{meQuery.data.email ?? meQuery.data.uid}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge
-                    tone={isAdmin ? 'success' : 'neutral'}
-                    icon={isAdmin ? '★' : '•'}
-                    label={isAdmin ? '관리자' : '일반 사용자'}
-                  />
-                  <StatusBadge
-                    tone={meQuery.data.d1_connected ? 'success' : 'warning'}
-                    icon={meQuery.data.d1_connected ? '✓' : '!'}
-                    label={meQuery.data.d1_connected ? 'D1 연결됨' : 'D1 확인 필요'}
-                  />
-                </div>
-              </div>
-
-              <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg bg-surface-subtle p-3.5">
-                  <dt className="text-xs text-ink-soft">Firebase UID</dt>
-                  <dd className="mt-1 break-all font-mono text-sm text-ink">{meQuery.data.uid}</dd>
-                </div>
-                <div className="rounded-lg bg-surface-subtle p-3.5">
-                  <dt className="text-xs text-ink-soft">최대 세션 만료 (14일)</dt>
-                  <dd className="mt-1 text-sm text-ink">{meQuery.data.session_expires_at}</dd>
-                </div>
-                <div className="rounded-lg bg-surface-subtle p-3.5">
-                  <dt className="text-xs text-ink-soft">민감 작업 재인증 유효 (15분)</dt>
-                  <dd className="mt-1 text-sm text-ink">{meQuery.data.reauth_valid_until}</dd>
-                </div>
-                <div className="rounded-lg bg-surface-subtle p-3.5">
-                  <dt className="text-xs text-ink-soft">현재 단계</dt>
-                  <dd className="mt-1 text-sm text-ink">
-                    Phase 3: 글감 발굴 · 1차 출처 스냅샷 · 원고 생성/검증/승인
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('categories')}
-                  className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta"
-                >
-                  카테고리 관리
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('upload')}
-                  className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta"
-                >
-                  현장 사진·메모 올리기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('discovery')}
-                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
-                >
-                  글감 발굴 시작
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('manuscripts')}
-                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse"
-                >
-                  원고 편집·검증
-                </button>
-              </div>
-            </section>
-
-            <section className="card-surface p-6">
-              <h3 className="text-lg font-semibold text-ink">민감 작업 15분 재인증 검증</h3>
-              <p className="mt-1 text-sm text-ink-soft">
-                최근 로그인 후 15분이 지난 상태에서 아래 버튼을 누르면{' '}
-                <code>401 REAUTH_REQUIRED</code> 응답을 받고 Google 팝업 재인증 모달이 자동으로
-                열립니다. 내보내기에는 본인 소유의 데이터만 포함됩니다.
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => exportMutation.mutate()}
-                  disabled={exportMutation.isPending}
-                  className="pill-btn bg-cta px-5 text-sm font-semibold text-ink-inverse disabled:opacity-60"
-                >
-                  {exportMutation.isPending ? '내보내기 확인 중...' : '본인 데이터 JSON 내보내기 테스트'}
-                </button>
-                {exportMessage && <span className="text-sm text-ink-soft">{exportMessage}</span>}
-              </div>
-            </section>
-          </>
         )}
       </div>
     </main>

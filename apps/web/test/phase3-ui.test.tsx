@@ -517,6 +517,19 @@ describe('Phase 3 Pages: CategoriesPage 409 확인 · DiscoveryPage · Manuscrip
             : []
         })}
         loadManuscriptDetail={async () => detailState}
+        loadDownloadUrls={async () => ({
+          expires_in_seconds: 600,
+          items: [
+            {
+              seq: 1,
+              r2_key: 'users/u1/captures/cap-1/1.webp',
+              caption: '아키텍처 메모',
+              is_ai_generated: false,
+              download_url: 'https://r2.example/users/u1/captures/cap-1/1.webp?sig=1',
+              expires_at: '2026-11-26T00:10:00.000Z'
+            }
+          ]
+        })}
         requestGenerate={requestGenerate}
         requestVerifySanitize={requestVerifySanitize}
       />
@@ -535,8 +548,12 @@ describe('Phase 3 Pages: CategoriesPage 409 확인 · DiscoveryPage · Manuscrip
       expect(requestVerifySanitize).toHaveBeenCalledWith('ms-1');
     });
 
-    // Photo markers & metadata shown (Phase 3 scope: no actual thumbnails)
-    expect(await screen.findByText('사진 썸네일은 Phase 4 연결')).toBeInTheDocument();
+    // Photo thumbnail, markers & metadata shown (Phase 4 R2 download-urls connected)
+    expect(await screen.findByText('R2 썸네일 1장 연결됨')).toBeInTheDocument();
+    expect(screen.getByAltText('아키텍처 메모')).toHaveAttribute(
+      'src',
+      'https://r2.example/users/u1/captures/cap-1/1.webp?sig=1'
+    );
     expect(screen.getByText('[📷 이미지 1 삽입 위치: 아키텍처 메모]')).toBeInTheDocument();
     expect(screen.getByText('01_아키텍처_메모.jpg')).toBeInTheDocument();
     expect(screen.getByText(/1600×1200/)).toBeInTheDocument();

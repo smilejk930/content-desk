@@ -5,6 +5,7 @@ export * from './domain/html-sanitize.js';
 export * from './domain/manuscript.js';
 export * from './domain/content-hash.js';
 export * from './domain/quota.js';
+export * from './domain/publish.js';
 export * from './domain/source-domains.js';
 export * from './domain/ngram.js';
 export * from './schemas/category.js';

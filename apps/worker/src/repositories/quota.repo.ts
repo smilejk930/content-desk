@@ -121,7 +121,7 @@ export interface QuotaSettlementItem {
 export async function settleQuotaAndUsageBatch(
   db: D1Database,
   params: {
-    ownerUid: string;
+    ownerUid: string | null;
     items: readonly QuotaSettlementItem[];
     d1WindowDate: string;
     d1ReadsCap: number;
@@ -160,7 +160,7 @@ export async function settleQuotaAndUsageBatch(
         .bind(safeUsed, safeReserved, params.nowIso, item.provider, item.windowDate)
     );
 
-    if (item.recordInUsageDaily && safeUsed > 0) {
+    if (item.recordInUsageDaily && safeUsed > 0 && params.ownerUid) {
       statements.push(
         db
           .prepare(

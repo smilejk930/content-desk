@@ -493,4 +493,92 @@ describe('사람별 데이터 격리 (사용자 A / 사용자 B / 관리자 및 
       }
     }
   });
+
+  it('isolates Phase 4 media/download-urls, published-posts, visitors, dashboard/summary, and settings from other users and admin (404 NOT_FOUND + 0 leaked rows)', async () => {
+    const nowIso = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-a-001', '사용자 A', nowIso, nowIso, nowIso),
+      env.DB.prepare(
+        `INSERT INTO users (uid, label, status, created_by, created_at, updated_at, status_changed_at)
+         VALUES (?, ?, 'active', 'owner-uid-1', ?, ?, ?)`
+      ).bind('user-b-002', '사용자 B', nowIso, nowIso, nowIso)
+    ]);
+
+    await seedOwnerDataset('user-a-001', 'ua', nowIso);
+    await env.DB.prepare(
+      `INSERT INTO user_meta (owner_uid, key, value, updated_at)
+       VALUES ('user-a-001', 'naver_blog_id', 'user_a_secret_blog', ?)`
+    )
+      .bind(nowIso)
+      .run();
+
+    const tokenB = await signFirebaseToken({ keyPair, sub: 'user-b-002' });
+    const tokenAdmin = await signFirebaseToken({ keyPair, sub: 'owner-uid-1' });
+
+    for (const otherToken of [tokenB, tokenAdmin]) {
+      // Targeted Phase 4 endpoints on User A's manuscript_id / capture_id -> 404 NOT_FOUND
+      const targetedPhase4: Array<{ path: string; body: Record<string, unknown> }> = [
+        { path: '/api/media/download-urls', body: { manuscript_id: 'ua-ms' } },
+        { path: '/api/media/download-urls', body: { capture_id: 'ua-cap' } },
+        {
+          path: '/api/published-posts',
+          body: {
+            manuscript_id: 'ua-ms',
+            post_url: 'https://blog.naver.com/attacker/987654321',
+            target_keywords: ['탈취키워드']
+          }
+        }
+      ];
+
+      for (const req of targetedPhase4) {
+        const res = await SELF.fetch(`https://worker.test${req.path}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${otherToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(req.body)
+        });
+        expect(res.status).toBe(404);
+        expect(((await res.json()) as { error: { code: string } }).error.code).toBe('NOT_FOUND');
+      }
+
+      // List / Summary / Settings endpoints must return 0 rows and zero leaked values from User A
+      const postsRes = await SELF.fetch('https://worker.test/api/published-posts', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(postsRes.status).toBe(200);
+      expect(((await postsRes.json()) as { posts: unknown[] }).posts).toHaveLength(0);
+
+      const visitorsRes = await SELF.fetch('https://worker.test/api/visitors', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(visitorsRes.status).toBe(200);
+      expect(((await visitorsRes.json()) as { visitors: unknown[] }).visitors).toHaveLength(0);
+
+      const summaryRes = await SELF.fetch('https://worker.test/api/dashboard/summary', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(summaryRes.status).toBe(200);
+      const summaryJson = (await summaryRes.json()) as {
+        approvals: { total_approved_count: number };
+        published_count: number;
+        recent_visitors: unknown[];
+      };
+      expect(summaryJson.approvals.total_approved_count).toBe(0);
+      expect(summaryJson.published_count).toBe(0);
+      expect(summaryJson.recent_visitors).toHaveLength(0);
+      expect(JSON.stringify(summaryJson)).not.toContain('ua-cat');
+
+      const settingsRes = await SELF.fetch('https://worker.test/api/settings', {
+        headers: { Authorization: `Bearer ${otherToken}` }
+      });
+      expect(settingsRes.status).toBe(200);
+      const settingsJson = (await settingsRes.json()) as { naver_blog_id: string | null };
+      expect(settingsJson.naver_blog_id).toBeNull();
+    }
+  });
 });

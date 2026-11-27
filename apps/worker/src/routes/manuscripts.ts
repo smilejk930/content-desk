@@ -678,6 +678,18 @@ export const manuscriptsRoute = new Hono<WorkerEnv>()
       const nextTags = body.tags ?? record.manuscript.tags;
       const nextVisibility = body.visibility ?? record.manuscript.visibility;
       const nextImages = body.images ?? record.manuscript.images;
+      const hasAiImages = nextImages.some((img) => img.is_ai_generated);
+      if (body.images !== undefined && hasAiImages && record.content_type !== 'explainer') {
+        throw new AppError(
+          422,
+          'VALIDATION_ERROR',
+          '경험 후기·브이로그 원고에는 AI 생성 이미지를 포함할 수 없습니다.'
+        );
+      }
+      const nextAiDisclosure =
+        body.images !== undefined
+          ? buildAiImageDisclosure(hasAiImages)
+          : record.manuscript.ai_disclosure;
       const nextNgram =
         body.ngram_max_similarity !== undefined
           ? body.ngram_max_similarity
@@ -690,7 +702,7 @@ export const manuscriptsRoute = new Hono<WorkerEnv>()
         tags: nextTags,
         sponsorship: record.manuscript.sponsorship,
         ftc_disclosure: record.manuscript.ftc_disclosure,
-        ai_disclosure: record.manuscript.ai_disclosure,
+        ai_disclosure: nextAiDisclosure,
         visibility: nextVisibility,
         naver_board_name: nextBoardName
       });
@@ -705,6 +717,7 @@ export const manuscriptsRoute = new Hono<WorkerEnv>()
         tags: nextTags,
         visibility: nextVisibility,
         images: nextImages,
+        ai_disclosure: nextAiDisclosure,
         ngram_max_similarity: nextNgram,
         sanitized_at: nowIso,
         content_hash: nextHash,

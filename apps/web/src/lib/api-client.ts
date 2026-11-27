@@ -17,6 +17,10 @@ import type {
   CreateCategoryRequest,
   CreateSourceSnapshotRequest,
   CreateSourceSnapshotResponse,
+  DailyVisitorRequest,
+  DailyVisitorResponse,
+  DailyVisitorsListResponse,
+  DashboardSummaryResponse,
   DeleteCategoryResponse,
   DiscoverStep1Request,
   DiscoverStep1Response,
@@ -30,8 +34,14 @@ import type {
   ManuscriptDetailResponse,
   ManuscriptResponse,
   ManuscriptsListResponse,
+  MediaDownloadUrlsRequest,
+  MediaDownloadUrlsResponse,
   MeResponse,
+  PublishedPostResponse,
+  PublishedPostsListResponse,
+  RegisterPublishedPostRequest,
   ResolveVerifyRequest,
+  SettingsResponse,
   TopicFromCaptureRequest,
   TopicResponse,
   TopicsListResponse,
@@ -40,9 +50,11 @@ import type {
   UpdateAdminUserRequest,
   UpdateCategoryRequest,
   UpdateManuscriptRequest,
+  UpdateSettingsRequest,
   VerifySanitizeResponse
 } from '@content-desk/shared';
 import type { AppType } from '@content-desk/worker/app-type';
+import { normalizeApiBaseUrl } from './csp';
 import { getCurrentIdToken, signOutUser } from './firebase';
 
 export class ApiRequestError extends Error {
@@ -79,7 +91,7 @@ export function registerApiClientHooks(nextHooks: ApiClientHooks): void {
   hooks = nextHooks;
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 async function parseErrorPayload(res: Response): Promise<ApiErrorPayload | null> {
   try {
@@ -443,6 +455,51 @@ export async function approveManuscript(
     json: input
   });
   return unwrapJson<ManuscriptResponse>(res);
+}
+
+// Phase 4: Media Download URLs, Published Posts, Visitors, Dashboard Summary, Settings
+export async function requestMediaDownloadUrls(
+  input: MediaDownloadUrlsRequest
+): Promise<MediaDownloadUrlsResponse> {
+  const res = await apiClient.api.media['download-urls'].$post({ json: input });
+  return unwrapJson<MediaDownloadUrlsResponse>(res);
+}
+
+export async function fetchPublishedPosts(): Promise<PublishedPostsListResponse> {
+  const res = await apiClient.api['published-posts'].$get();
+  return unwrapJson<PublishedPostsListResponse>(res);
+}
+
+export async function registerPublishedPost(
+  input: RegisterPublishedPostRequest
+): Promise<PublishedPostResponse> {
+  const res = await apiClient.api['published-posts'].$post({ json: input });
+  return unwrapJson<PublishedPostResponse>(res);
+}
+
+export async function fetchVisitors(): Promise<DailyVisitorsListResponse> {
+  const res = await apiClient.api.visitors.$get();
+  return unwrapJson<DailyVisitorsListResponse>(res);
+}
+
+export async function upsertVisitor(input: DailyVisitorRequest): Promise<DailyVisitorResponse> {
+  const res = await apiClient.api.visitors.$put({ json: input });
+  return unwrapJson<DailyVisitorResponse>(res);
+}
+
+export async function fetchDashboardSummary(): Promise<DashboardSummaryResponse> {
+  const res = await apiClient.api.dashboard.summary.$get();
+  return unwrapJson<DashboardSummaryResponse>(res);
+}
+
+export async function fetchSettings(): Promise<SettingsResponse> {
+  const res = await apiClient.api.settings.$get();
+  return unwrapJson<SettingsResponse>(res);
+}
+
+export async function updateSettings(input: UpdateSettingsRequest): Promise<SettingsResponse> {
+  const res = await apiClient.api.settings.$put({ json: input });
+  return unwrapJson<SettingsResponse>(res);
 }
 
 export async function uploadBlobToPresignedUrl(

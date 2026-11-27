@@ -676,4 +676,91 @@ describe('원고 생성·대조/정제·[VERIFY] 차단·해소·승인·수정 
       'VERIFY_UNRESOLVED'
     );
   });
+
+  it('recalculates ai_disclosure and content_hash when PATCH /api/manuscripts/:id toggles is_ai_generated images', async () => {
+    const token = await signFirebaseToken({ keyPair, sub: 'owner-uid-1' });
+    const nowIso = new Date().toISOString();
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes('securetoken@system.gserviceaccount.com')) {
+        return new Response(JSON.stringify({ [keyPair.kid]: keyPair.certPem }), {
+          status: 200,
+          headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' }
+        });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    await seedExplainerTopicWithSnapshot();
+    const initialHash = 'c'.repeat(64);
+    const initialBundle = {
+      manuscript_id: 'ms-ai-patch-1',
+      topic_id: 'topic-exp-1',
+      version: 1,
+      content_hash: initialHash,
+      title_candidates: ['AI 도식 테스트'],
+      selected_title: 'AI 도식 테스트',
+      body_html: '<p>본문입니다.</p>',
+      naver_board_name: 'IT해설',
+      sponsorship: { is_sponsored: false },
+      ftc_disclosure: null,
+      ai_disclosure: null,
+      images: [],
+      tags: ['테크'],
+      visibility: '전체공개',
+      claims: [],
+      ngram_max_similarity: null,
+      sanitized_at: nowIso,
+      approved_hash: null,
+      approved_at: null
+    };
+
+    await env.DB.prepare(
+      `INSERT INTO manuscripts (manuscript_id, owner_uid, topic_id, category_id, content_type, run_id, version, content_hash, approved_hash, approved_at, unresolved_verify_count, bundle_json, created_at, updated_at)
+       VALUES ('ms-ai-patch-1', 'owner-uid-1', 'topic-exp-1', 'cat-exp', 'explainer', 'run-ai-patch', 1, ?, NULL, NULL, 0, ?, ?, ?)`
+    )
+      .bind(initialHash, JSON.stringify(initialBundle), nowIso, nowIso)
+      .run();
+
+    // 1) Add AI-generated diagram image -> ai_disclosure must be recalculated to non-null string
+    const patchAddAi = await SELF.fetch('https://worker.test/api/manuscripts/ms-ai-patch-1', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: [
+          {
+            seq: 1,
+            r2_key: 'users/owner-uid-1/ai-images/ms-ai-patch-1/1.png',
+            caption: '개념 도식',
+            is_ai_generated: true
+          }
+        ]
+      })
+    });
+    expect(patchAddAi.status).toBe(200);
+    const withAi = manuscriptResponseSchema.parse(await patchAddAi.json());
+    expect(withAi.manuscript.ai_disclosure).toContain('AI로 생성');
+    expect(withAi.manuscript.content_hash).not.toBe(initialHash);
+
+    // 2) Replace with real photo (is_ai_generated: false) -> ai_disclosure must clear back to null
+    const patchRemoveAi = await SELF.fetch('https://worker.test/api/manuscripts/ms-ai-patch-1', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: [
+          {
+            seq: 1,
+            r2_key: 'users/owner-uid-1/captures/cap-1/1.webp',
+            caption: '실물 사진',
+            is_ai_generated: false
+          }
+        ]
+      })
+    });
+    expect(patchRemoveAi.status).toBe(200);
+    const withoutAi = manuscriptResponseSchema.parse(await patchRemoveAi.json());
+    expect(withoutAi.manuscript.ai_disclosure).toBeNull();
+    expect(withoutAi.manuscript.content_hash).not.toBe(withAi.manuscript.content_hash);
+  });
 });

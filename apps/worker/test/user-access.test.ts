@@ -61,6 +61,13 @@ describe('가입 경로 차단 및 사용자 상태 전수 검증 (ADMIN_UIDS / 
     { method: 'POST', path: '/api/manuscripts/m1/resolve-verify' },
     { method: 'POST', path: '/api/manuscripts/m1/approve' },
     { method: 'POST', path: '/api/media/download-urls' },
+    { method: 'GET', path: '/api/published-posts' },
+    { method: 'POST', path: '/api/published-posts' },
+    { method: 'GET', path: '/api/visitors' },
+    { method: 'PUT', path: '/api/visitors' },
+    { method: 'GET', path: '/api/dashboard/summary' },
+    { method: 'GET', path: '/api/settings' },
+    { method: 'PUT', path: '/api/settings' },
     { method: 'POST', path: '/api/export' },
     { method: 'POST', path: '/api/bridge/tokens' },
     { method: 'DELETE', path: '/api/bridge/tokens/t1' },
@@ -85,7 +92,15 @@ describe('가입 경로 차단 및 사용자 상태 전수 검증 (ADMIN_UIDS / 
     { method: 'POST', path: '/api/manuscripts/generate' },
     { method: 'POST', path: '/api/manuscripts/m1/verify-sanitize' },
     { method: 'PATCH', path: '/api/manuscripts/m1' },
-    { method: 'POST', path: '/api/manuscripts/m1/approve' }
+    { method: 'POST', path: '/api/manuscripts/m1/approve' },
+    { method: 'POST', path: '/api/media/download-urls' },
+    { method: 'GET', path: '/api/published-posts' },
+    { method: 'POST', path: '/api/published-posts' },
+    { method: 'GET', path: '/api/visitors' },
+    { method: 'PUT', path: '/api/visitors' },
+    { method: 'GET', path: '/api/dashboard/summary' },
+    { method: 'GET', path: '/api/settings' },
+    { method: 'PUT', path: '/api/settings' }
   ];
 
   it.each(endpoints)(

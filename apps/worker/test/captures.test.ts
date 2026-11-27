@@ -204,12 +204,21 @@ describe('캡처 API · R2 SigV4 서명 URL · Miniflare R2 HEAD 검증 · LLM �
     const consented = captureResponseSchema.parse(await consentRes.json());
     expect(consented.capture.llm_consent_at).not.toBeNull();
 
-    // Verify POST /api/media/download-urls remains Phase 4 stub (501)
-    const stubRes = await SELF.fetch('https://worker.test/api/media/download-urls', {
+    // Verify POST /api/media/download-urls issues a 10-min GET signed URL for the uploaded capture
+    const dlRes = await SELF.fetch('https://worker.test/api/media/download-urls', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capture_id: 'cap-sigv4-01' })
     });
-    expect(stubRes.status).toBe(501);
+    expect(dlRes.status).toBe(200);
+    const dlJson = (await dlRes.json()) as {
+      expires_in_seconds: number;
+      items: Array<{ r2_key: string; download_url: string }>;
+    };
+    expect(dlJson.expires_in_seconds).toBe(600);
+    expect(dlJson.items).toHaveLength(1);
+    expect(dlJson.items[0]!.r2_key).toBe('users/owner-uid-1/captures/cap-sigv4-01/1.webp');
+    expect(dlJson.items[0]!.download_url).toContain('X-Amz-Expires=600');
   });
 
   it('rejects missing R2 object, oversized/mismatched R2 objects (and deletes them), and mismatched rebuilt r2_key with 400', async () => {

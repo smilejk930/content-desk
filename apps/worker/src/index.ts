@@ -3,6 +3,7 @@ import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { parseCsvList, type WorkerBindings, type WorkerEnv } from './env.js';
+import { runScheduledTasks } from './jobs/scheduled.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { adminRoute } from './routes/admin.js';
 import { capturesRoute } from './routes/captures.js';
@@ -10,6 +11,8 @@ import { categoriesRoute } from './routes/categories.js';
 import { exportRoute } from './routes/export.js';
 import { manuscriptsRoute } from './routes/manuscripts.js';
 import { meRoute } from './routes/me.js';
+import { mediaRoute } from './routes/media.js';
+import { publishRoute } from './routes/publish.js';
 import { protectedStubsRoute } from './routes/stubs.js';
 import { topicsRoute } from './routes/topics.js';
 
@@ -39,14 +42,17 @@ const routes = app
   .route('/api/captures', capturesRoute)
   .route('/api/topics', topicsRoute)
   .route('/api/manuscripts', manuscriptsRoute)
+  .route('/api/media', mediaRoute)
   .route('/api/export', exportRoute)
+  .route('/api', publishRoute)
   .route('/api', protectedStubsRoute);
 
 export type AppType = typeof routes;
 
 export default {
   fetch: app.fetch,
-  async scheduled(_controller: ScheduledController, _env: WorkerBindings, _ctx: ExecutionContext) {
-    // Phase 4 (rank tracking) & Phase 5 (M2 job expiry cleanup) scheduled tasks
+  async scheduled(controller: ScheduledController, env: WorkerBindings, _ctx: ExecutionContext) {
+    const now = controller.scheduledTime ? new Date(controller.scheduledTime) : new Date();
+    await runScheduledTasks(env, now);
   }
 };

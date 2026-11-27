@@ -55,3 +55,14 @@ export async function listUserMeta(scope: UserScope, db: D1Database): Promise<Us
     .all<UserMetaRow>();
   return result.results ?? [];
 }
+
+export async function deleteUserMeta(
+  scope: UserScope,
+  db: D1Database,
+  key: string
+): Promise<void> {
+  await db
+    .prepare('DELETE FROM user_meta WHERE owner_uid = ? AND key = ?')
+    .bind(scope.uid, key)
+    .run();
+}

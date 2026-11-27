@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   buildSequentialImageFilename,
   formatImageMarker,
+  isManuscriptApprovedForExport,
   stripHtmlToPlainText,
   type ApproveManuscriptRequest,
   type CaptureResponse,
@@ -12,6 +13,8 @@ import {
   type ManuscriptDetailResponse,
   type ManuscriptResponse,
   type ManuscriptsListResponse,
+  type MediaDownloadUrlsRequest,
+  type MediaDownloadUrlsResponse,
   type NgramEvaluationResult,
   type NgramReferenceItem,
   type ResolveVerifyRequest,
@@ -29,6 +32,7 @@ import {
   fetchTopics,
   generateManuscript,
   getApiErrorMessage,
+  requestMediaDownloadUrls,
   resolveVerifyClaim,
   updateManuscript,
   verifySanitizeManuscript
@@ -41,10 +45,12 @@ import { VerifyGate } from '../components/VerifyGate';
 
 export interface ManuscriptPageProps {
   initialTopicId?: string | null;
+  initialManuscriptId?: string | null;
   listTopics?: () => Promise<TopicsListResponse>;
   listCaptures?: () => Promise<CapturesListResponse>;
   listManuscripts?: () => Promise<ManuscriptsListResponse>;
   loadManuscriptDetail?: (id: string) => Promise<ManuscriptDetailResponse>;
+  loadDownloadUrls?: (input: MediaDownloadUrlsRequest) => Promise<MediaDownloadUrlsResponse>;
   submitCaptureConsent?: (id: string, input: LlmConsentRequest) => Promise<CaptureResponse>;
   requestGenerate?: (input: GenerateManuscriptRequest) => Promise<ManuscriptResponse>;
   requestVerifySanitize?: (id: string) => Promise<VerifySanitizeResponse>;
@@ -55,26 +61,32 @@ export interface ManuscriptPageProps {
     manuscriptText: string,
     references: readonly NgramReferenceItem[]
   ) => Promise<NgramEvaluationResult>;
+  onOpenCopyPanel?: (manuscriptId: string) => void;
 }
 
 export function ManuscriptPage({
   initialTopicId = null,
+  initialManuscriptId = null,
   listTopics = () => fetchTopics(),
   listCaptures = () => fetchCaptures(),
   listManuscripts = () => fetchManuscripts(),
   loadManuscriptDetail = fetchManuscriptDetail,
+  loadDownloadUrls = requestMediaDownloadUrls,
   submitCaptureConsent = consentCaptureLlm,
   requestGenerate = generateManuscript,
   requestVerifySanitize = verifySanitizeManuscript,
   requestUpdate = updateManuscript,
   requestResolveVerify = resolveVerifyClaim,
   requestApprove = approveManuscript,
-  runNgram = (text, refs) => runNgramSimilarityCheck(text, refs)
+  runNgram = (text, refs) => runNgramSimilarityCheck(text, refs),
+  onOpenCopyPanel
 }: ManuscriptPageProps) {
   const queryClient = useQueryClient();
 
   const [selectedTopicId, setSelectedTopicId] = useState<string>(initialTopicId ?? '');
-  const [selectedManuscriptId, setSelectedManuscriptId] = useState<string>('');
+  const [selectedManuscriptId, setSelectedManuscriptId] = useState<string>(
+    initialManuscriptId ?? ''
+  );
   const [llmConsentChecked, setLlmConsentChecked] = useState<boolean>(false);
   const [generationStage, setGenerationStage] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
@@ -98,6 +110,12 @@ export function ManuscriptPage({
       setSelectedTopicId(initialTopicId);
     }
   }, [initialTopicId]);
+
+  useEffect(() => {
+    if (initialManuscriptId) {
+      setSelectedManuscriptId(initialManuscriptId);
+    }
+  }, [initialManuscriptId]);
 
   const topicsQuery = useQuery({
     queryKey: ['topics'],
@@ -138,6 +156,29 @@ export function ManuscriptPage({
   });
 
   const detail = detailQuery.data ?? null;
+
+  const downloadUrlsQuery = useQuery({
+    queryKey: [
+      'manuscript-download-urls',
+      detail?.manuscript.manuscript_id,
+      detail?.manuscript.images.length ?? 0
+    ],
+    queryFn: () => loadDownloadUrls({ manuscript_id: detail!.manuscript.manuscript_id }),
+    enabled: Boolean(detail && detail.manuscript.images.length > 0),
+    retry: false
+  });
+
+  const thumbnailUrlByKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of downloadUrlsQuery.data?.items ?? []) {
+      map.set(item.r2_key, item.download_url);
+    }
+    return map;
+  }, [downloadUrlsQuery.data]);
+
+  const isApprovedForCopy = detail
+    ? isManuscriptApprovedForExport(detail.manuscript, detail.unresolved_verify_count)
+    : false;
 
   // Sync edit form whenever manuscript version/hash changes
   useEffect(() => {
@@ -573,12 +614,22 @@ export function ManuscriptPage({
             </div>
           </section>
 
-          {/* Phase 3 사진 메타데이터 섹션 (실제 썸네일/download-urls는 Phase 4) */}
+          {/* Phase 4 실제 사진 썸네일 미리보기 + 마커 & 캡처 메타데이터 */}
           {(detail.manuscript.images.length > 0 || detail.comparison_context.capture_memo) && (
             <section className="card-surface p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-lg font-semibold text-ink">첨부 사진 마커 &amp; 캡처 메타데이터</h3>
-                <StatusBadge tone="neutral" icon="📷" label="사진 썸네일은 Phase 4 연결" />
+                <h3 className="text-lg font-semibold text-ink">첨부 사진 썸네일 &amp; 캡처 메타데이터</h3>
+                <StatusBadge
+                  tone={downloadUrlsQuery.data ? 'success' : 'neutral'}
+                  icon="📷"
+                  label={
+                    downloadUrlsQuery.isLoading
+                      ? '썸네일 URL 발급 중...'
+                      : downloadUrlsQuery.data
+                        ? `R2 썸네일 ${downloadUrlsQuery.data.items.length}장 연결됨`
+                        : '사진 메타데이터 표시'
+                  }
+                />
               </div>
 
               {detail.comparison_context.capture_memo && (
@@ -589,24 +640,33 @@ export function ManuscriptPage({
               )}
 
               {detail.manuscript.images.length > 0 && (
-                <ul className="mt-3 flex flex-col gap-2">
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                   {detail.manuscript.images.map((img) => {
                     const meta = detail.comparison_context.capture_photos.find(
                       (p) => p.r2_key === img.r2_key
                     );
+                    const thumbUrl = thumbnailUrlByKey.get(img.r2_key);
                     return (
                       <li
                         key={`${img.seq}-${img.r2_key}`}
-                        className="rounded-xl border border-ink/10 bg-surface-subtle p-3.5 text-xs"
+                        className="flex flex-col gap-2 rounded-xl border border-ink/10 bg-surface-subtle p-3.5 text-xs"
                       >
+                        {thumbUrl && (
+                          <img
+                            src={thumbUrl}
+                            alt={img.caption}
+                            loading="lazy"
+                            className="h-36 w-full rounded-lg bg-canvas object-cover"
+                          />
+                        )}
                         <p className="font-semibold text-brand">
                           {formatImageMarker(img.seq, img.caption)}
                         </p>
-                        <p className="mt-1 text-ink">
+                        <p className="text-ink">
                           내보내기 파일명: <code>{buildSequentialImageFilename(img.seq, img.caption)}</code>
                         </p>
                         {meta && (
-                          <p className="mt-0.5 text-ink-soft">
+                          <p className="text-ink-soft">
                             규격: {meta.width}×{meta.height} · {meta.mime_type} ·{' '}
                             {Math.round(meta.byte_size / 1024)}KB
                             {meta.taken_at ? ` · 촬영: ${meta.taken_at}` : ''}
@@ -654,31 +714,43 @@ export function ManuscriptPage({
 
           <BottomActionBar ariaLabel="원고 저장 작업 바">
             <span className="text-xs text-ink-soft">
-              편집 후 저장하면 승인이 초기화되며, 검증 게이트 통과 후 승인할 수 있습니다.
+              편집 후 저장하면 승인이 초기화되며, 검증 게이트 통과 후 복사 패널로 이동할 수 있습니다.
             </span>
-            <button
-              type="button"
-              disabled={updateMutation.isPending}
-              onClick={() =>
-                updateMutation.mutate({
-                  id: detail.manuscript.manuscript_id,
-                  payload: {
-                    selected_title: editTitle.trim(),
-                    body_html: editBodyHtml,
-                    naver_board_name: editBoardName.trim(),
-                    visibility: editVisibility,
-                    tags: editTagsRaw
-                      .split(',')
-                      .map((t) => t.trim())
-                      .filter((t) => t.length > 0),
-                    ngram_max_similarity: ngramResult?.maxSimilarity ?? null
-                  }
-                })
-              }
-              className="pill-btn bg-cta px-6 text-sm font-semibold text-ink-inverse disabled:opacity-50"
-            >
-              {updateMutation.isPending ? '저장 중...' : '원고 수정 저장'}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {onOpenCopyPanel && (
+                <button
+                  type="button"
+                  disabled={!isApprovedForCopy}
+                  onClick={() => onOpenCopyPanel(detail.manuscript.manuscript_id)}
+                  className="pill-btn border border-cta bg-surface px-5 text-sm font-semibold text-cta disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  수동 복사·공유 패널 열기
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={updateMutation.isPending}
+                onClick={() =>
+                  updateMutation.mutate({
+                    id: detail.manuscript.manuscript_id,
+                    payload: {
+                      selected_title: editTitle.trim(),
+                      body_html: editBodyHtml,
+                      naver_board_name: editBoardName.trim(),
+                      visibility: editVisibility,
+                      tags: editTagsRaw
+                        .split(',')
+                        .map((t) => t.trim())
+                        .filter((t) => t.length > 0),
+                      ngram_max_similarity: ngramResult?.maxSimilarity ?? null
+                    }
+                  })
+                }
+                className="pill-btn bg-cta px-6 text-sm font-semibold text-ink-inverse disabled:opacity-50"
+              >
+                {updateMutation.isPending ? '저장 중...' : '원고 수정 저장'}
+              </button>
+            </div>
           </BottomActionBar>
         </>
       )}

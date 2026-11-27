@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { injectApiOriginIntoHeaders } from './src/lib/csp.js';
+import { injectApiOriginIntoHeaders, validateProductionApiBaseUrl } from './src/lib/csp.js';
 
 function pagesHeadersCspPlugin(apiBaseUrl: string): Plugin {
   return {
@@ -19,9 +19,19 @@ function pagesHeadersCspPlugin(apiBaseUrl: string): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, import.meta.dirname, 'VITE_');
   const apiBaseUrl = env.VITE_API_BASE_URL ?? process.env.VITE_API_BASE_URL ?? '';
+
+  if (command === 'build') {
+    const guard = validateProductionApiBaseUrl(apiBaseUrl, {
+      cfPages: process.env.CF_PAGES,
+      requireApiBaseUrl: process.env.REQUIRE_API_BASE_URL
+    });
+    if (guard.warning) {
+      console.warn(guard.warning);
+    }
+  }
 
   return {
     plugins: [react(), tailwindcss(), pagesHeadersCspPlugin(apiBaseUrl)],

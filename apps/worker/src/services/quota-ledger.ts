@@ -177,7 +177,7 @@ export async function reserveProviderQuota(
 export async function settleProviderQuotas(
   db: D1Database,
   params: {
-    ownerUid: string;
+    ownerUid: string | null;
     settlements: ReadonlyArray<{
       reservation: QuotaReservation;
       actualUsed: number;
@@ -185,11 +185,13 @@ export async function settleProviderQuotas(
     d1Reads?: number;
     d1Writes?: number;
     includeAuthUserRead?: boolean;
+    recordInUsageDaily?: boolean;
     now?: Date;
   }
 ): Promise<void> {
   const now = params.now ?? new Date();
   const utcDate = getUtcDateString(now);
+  const allowUsageDaily = (params.recordInUsageDaily ?? true) && Boolean(params.ownerUid);
 
   const items: QuotaSettlementItem[] = params.settlements.map(({ reservation, actualUsed }) => ({
     provider: reservation.provider,
@@ -198,7 +200,10 @@ export async function settleProviderQuotas(
     dailyCap: reservation.dailyCap,
     reservedAmount: reservation.reservedAmount,
     actualUsed: Math.max(0, Math.floor(actualUsed)),
-    recordInUsageDaily: reservation.provider !== 'd1_reads' && reservation.provider !== 'd1_writes'
+    recordInUsageDaily:
+      allowUsageDaily &&
+      reservation.provider !== 'd1_reads' &&
+      reservation.provider !== 'd1_writes'
   }));
 
   const usageDailyWrites = items.filter((i) => i.recordInUsageDaily && i.actualUsed > 0).length;
@@ -225,12 +230,13 @@ export async function settleProviderQuotas(
 export async function settleSingleProviderQuota(
   db: D1Database,
   params: {
-    ownerUid: string;
+    ownerUid: string | null;
     reservation: QuotaReservation;
     actualUsed: number;
     d1Reads?: number;
     d1Writes?: number;
     includeAuthUserRead?: boolean;
+    recordInUsageDaily?: boolean;
     now?: Date;
   }
 ): Promise<void> {
@@ -240,6 +246,7 @@ export async function settleSingleProviderQuota(
     d1Reads: params.d1Reads,
     d1Writes: params.d1Writes,
     includeAuthUserRead: params.includeAuthUserRead,
+    recordInUsageDaily: params.recordInUsageDaily,
     now: params.now
   });
 }
